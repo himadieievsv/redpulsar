@@ -16,7 +16,6 @@ repositories {
 }
 
 dependencies {
-
 }
 
 java {
