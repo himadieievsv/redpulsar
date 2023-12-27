@@ -2,6 +2,16 @@ import redis.clients.jedis.CommandArguments
 import redis.clients.jedis.commands.ProtocolCommand
 import redis.clients.jedis.params.SetParams
 
+/** Interface for testing tags. Avoiding manual string typing. */
+interface TestTags {
+    companion object {
+        const val INTEGRATIONS = "integration"
+        const val UNIT = "unit"
+    }
+}
+/** End. */
+
+/**  Extension for ease of comparing [SetParams] objects. */
 fun SetParams.equalsTo(other: SetParams): Boolean {
     val thisArgs = TestCommandArguments().also { this.addParams(it) }
     val otherArgs = TestCommandArguments().also { other.addParams(it) }
@@ -29,3 +39,4 @@ private class TestCommandArguments : CommandArguments(ProtocolCommand { byteArra
         return true
     }
 }
+/** End. */
