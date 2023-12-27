@@ -17,10 +17,8 @@ import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
 class RedLockTest {
-
     @Nested
     inner class SingleRedisInstance {
-
         private lateinit var redis: UnifiedJedis
 
         @BeforeEach
@@ -43,7 +41,7 @@ class RedLockTest {
                     any<String>(),
                     match<SetParams> {
                         it.equalsTo(SetParams().nx().px(ttl.seconds.inWholeMilliseconds))
-                    }
+                    },
                 )
             }
         }
@@ -100,7 +98,6 @@ class RedLockTest {
 
     @Nested
     inner class MultipleRedisInstance {
-
         private lateinit var redis1: UnifiedJedis
         private lateinit var redis2: UnifiedJedis
         private lateinit var redis3: UnifiedJedis

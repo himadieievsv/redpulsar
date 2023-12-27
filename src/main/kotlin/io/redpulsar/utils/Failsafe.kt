@@ -2,7 +2,10 @@ package io.redpulsar.utils
 
 import mu.KotlinLogging
 
-inline fun <R> failsafe(defaultRerunValue: R, block: () -> R): R {
+inline fun <R> failsafe(
+    defaultRerunValue: R,
+    block: () -> R,
+): R {
     return try {
         block()
     } catch (e: Exception) {
