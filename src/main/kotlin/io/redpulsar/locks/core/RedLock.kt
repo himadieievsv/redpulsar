@@ -1,7 +1,5 @@
 package io.redpulsar.locks.core
 
-import io.redpulsar.locks.api.Lock
-import io.redpulsar.utils.failsafe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -11,8 +9,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import redis.clients.jedis.UnifiedJedis
-import redis.clients.jedis.params.SetParams
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -30,9 +26,8 @@ class RedLock(
     private val instances: List<UnifiedJedis>,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
-) : Lock {
+) : AbstractLock() {
     private val quorum: Int = instances.size / 2 + 1
-    private val clientId: String = UUID.randomUUID().toString()
     private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
@@ -96,29 +91,5 @@ class RedLock(
             )
         }
         runBlocking { joinAll(*jobs.toTypedArray()) }
-    }
-
-    private fun lockInstance(
-        instance: UnifiedJedis,
-        resourceName: String,
-        ttl: Duration,
-    ): Boolean {
-        val lockParams = SetParams().nx().px(ttl.inWholeMilliseconds)
-        val result = failsafe(null) { instance.set(resourceName, clientId, lockParams) }
-        return result != null
-    }
-
-    private fun unlockInstance(
-        instance: UnifiedJedis,
-        resourceName: String,
-    ) {
-        val luaScript =
-            """
-            if redis.call("get", KEYS[1]) == ARGV[1] then
-                return redis.call("del", KEYS[1])
-            end
-            return 0
-            """.trimIndent()
-        failsafe { instance.eval(luaScript, listOf(resourceName), listOf(clientId)) }
     }
 }
