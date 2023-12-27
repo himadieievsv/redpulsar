@@ -17,6 +17,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6381:6379
       redis2:
         image: redis
         options: >-
@@ -24,6 +26,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6382:6379
       redis3:
         image: redis
         options: >-
@@ -31,6 +35,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6383:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
@@ -38,13 +44,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Run tests
-        env:
-          REDIS_HOST1: redis1
-          REDIS_HOST2: redis2
-          REDIS_HOST3: redis3
-          REDIS_PORT1: 6379
-          REDIS_PORT2: 6379
-          REDIS_PORT3: 6379
         run: |
           ./gradlew test -DexcludeTags="unit"
       - name: Archive test report
