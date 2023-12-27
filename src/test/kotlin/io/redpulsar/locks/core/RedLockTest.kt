@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -16,6 +17,7 @@ import redis.clients.jedis.params.SetParams
 import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class RedLockTest {
     @Nested
     inner class SingleRedisInstance {

@@ -24,10 +24,13 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("redis.clients:jedis:5.1.0")
     testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.slf4j:slf4j-simple:2.0.9")
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags(System.getProperty("excludeTags", "no-tag"))
+    }
     reports {
         junitXml.apply {
             isOutputPerTestCase = true

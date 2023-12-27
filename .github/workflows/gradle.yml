@@ -25,7 +25,7 @@ jobs:
           path: build/reports/ktlint/**/*.txt
       - name: Run tests
         run: |
-          ./gradlew test
+          ./gradlew test -DexcludeTags="integration"
       - name: Archive test report
         uses: actions/upload-artifact@v3
         with:
