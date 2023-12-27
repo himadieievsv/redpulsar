@@ -9,7 +9,6 @@ interface TestTags {
         const val UNIT = "unit"
     }
 }
-/** End. */
 
 /**  Extension for ease of comparing [SetParams] objects. */
 fun SetParams.equalsTo(other: SetParams): Boolean {
@@ -39,4 +38,3 @@ private class TestCommandArguments : CommandArguments(ProtocolCommand { byteArra
         return true
     }
 }
-/** End. */

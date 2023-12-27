@@ -81,13 +81,14 @@ class RedLockIntegrationTest {
     }
 
     private fun getInstances(): List<UnifiedJedis> {
-        val poolConfig = GenericObjectPoolConfig<Connection>().apply {
-            maxTotal = 64
-            maxIdle = 8
-            minIdle = 2
-            setMaxWait(Duration.ofMillis(100))
-            blockWhenExhausted = true
-        }
+        val poolConfig =
+            GenericObjectPoolConfig<Connection>().apply {
+                maxTotal = 64
+                maxIdle = 8
+                minIdle = 2
+                setMaxWait(Duration.ofMillis(100))
+                blockWhenExhausted = true
+            }
 
         val hostPort1 = getHostPort(1)
         val jedis1 = JedisPooled(poolConfig, hostPort1.host, hostPort1.port, 10)
@@ -98,8 +99,9 @@ class RedLockIntegrationTest {
         return listOf(jedis1, jedis2, jedis3)
     }
 
-    private fun getHostPort(number: Int) = HostAndPort(
-        System.getenv("REDIS_HOST$number") ?: "localhost",
-        (System.getenv("REDIS_PORT$number")?.toInt() ?: (6380 + number))
-    )
+    private fun getHostPort(number: Int) =
+        HostAndPort(
+            System.getenv("REDIS_HOST$number") ?: "localhost",
+            (System.getenv("REDIS_PORT$number")?.toInt() ?: (6380 + number)),
+        )
 }
