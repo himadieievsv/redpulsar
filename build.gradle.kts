@@ -28,6 +28,11 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    reports {
+        junitXml.apply {
+            isOutputPerTestCase = true
+        }
+    }
 }
 
 java {
