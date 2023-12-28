@@ -7,10 +7,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * A distributed lock implementation based on the Redlock algorithm.
- * [RedLock] depends on multiple single Redis instances or clusters to be available.
- * It uses a quorum to determine if the lock was acquired.
- * Details: https://redis.io/docs/manual/patterns/distributed-locks/
+ * A distributed lock for single or multiple Redis instances / clusters.
+ * It uses Redlock algorithm to determine if the lock was acquired.
+ * See details in [AbstractMultyInstanceLock].
  */
 class RedLock(
     instances: List<UnifiedJedis>,

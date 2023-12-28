@@ -14,7 +14,10 @@ import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 
 /**
- * Common functions for multi instance locks, where the lock is acquired on multiple Redis instances.
+ * A distributed lock implementation based on the Redlock algorithm.
+ * Algorithm depends on single or multiple Redis instances / clusters.
+ * It uses a quorum to determine if the lock was acquired.
+ * Details: https://redis.io/docs/manual/patterns/distributed-locks/
  */
 abstract class AbstractMultyInstanceLock(private val instances: List<UnifiedJedis>) : AbstractLock() {
     private val scope = CoroutineScope(Dispatchers.IO)
