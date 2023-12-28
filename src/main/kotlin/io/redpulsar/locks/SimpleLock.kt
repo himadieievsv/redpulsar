@@ -1,5 +1,6 @@
-package io.redpulsar.locks.core
+package io.redpulsar.locks
 
+import io.redpulsar.locks.core.AbstractLock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import redis.clients.jedis.UnifiedJedis

@@ -1,5 +1,6 @@
-package io.redpulsar.locks.core
+package io.redpulsar.locks
 
+import io.redpulsar.locks.core.AbstractLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -14,8 +15,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private val logger = KotlinLogging.logger {}
-
 /**
  * A distributed lock implementation based on the Redlock algorithm.
  * [RedLock] depends on multiple single Redis instances or clusters to be available.
@@ -27,6 +26,8 @@ class RedLock(
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
 ) : AbstractLock() {
+    private val logger = KotlinLogging.logger {}
+
     private val quorum: Int = instances.size / 2 + 1
     private val scope = CoroutineScope(Dispatchers.IO)
 

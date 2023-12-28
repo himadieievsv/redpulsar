@@ -1,6 +1,6 @@
 package io.redpulsar.locks.integration
 
-import io.redpulsar.locks.core.RedLock
+import io.redpulsar.locks.RedLock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
