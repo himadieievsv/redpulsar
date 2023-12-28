@@ -4,17 +4,20 @@ import equalsTo
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.UNIT)
@@ -101,6 +104,45 @@ class RedLockTest {
             }
             verify(exactly = 0) {
                 redis.set(any<String>(), any(), any())
+            }
+        }
+
+        @ParameterizedTest(name = "Validated with retry count - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate retry count`(retryCount: Int) {
+            if (retryCount > 0) {
+                Assertions.assertDoesNotThrow { RedLock(listOf(redis), retryCount = retryCount) }
+            } else {
+                assertThrows<IllegalArgumentException> { RedLock(listOf(redis), retryCount = retryCount) }
+            }
+        }
+
+        @ParameterizedTest(name = "Validated with retry delly - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate retry delly`(retryDelly: Int) {
+            if (retryDelly > 0) {
+                Assertions.assertDoesNotThrow { RedLock(listOf(redis), retryDelay = retryDelly.milliseconds) }
+            } else {
+                assertThrows<IllegalArgumentException> { RedLock(listOf(redis), retryDelay = retryDelly.milliseconds) }
+            }
+        }
+
+        @Test
+        fun `validate instance count`() {
+            Assertions.assertDoesNotThrow { RedLock(listOf(redis)) }
+            assertThrows<IllegalArgumentException> { RedLock(listOf()) }
+        }
+
+        @ParameterizedTest(name = "lock acquired with ttl - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate ttl`(ttl: Int) {
+            every { redis.set(eq("test"), any(), any()) } returns "OK"
+
+            val redLock = RedLock(listOf(redis))
+            if (ttl > 2) {
+                Assertions.assertDoesNotThrow { redLock.lock("test", ttl.milliseconds) }
+            } else {
+                assertThrows<IllegalArgumentException> { redLock.lock("test", ttl.milliseconds) }
             }
         }
     }

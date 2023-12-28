@@ -3,11 +3,13 @@ package io.redpulsar.locks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import redis.clients.jedis.Pipeline
@@ -178,6 +180,61 @@ class SemaphoreTest {
                     },
                     any<List<String>>(),
                 )
+            }
+        }
+
+        @ParameterizedTest(name = "Validated with retry count - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate retry count`(retryCount: Int) {
+            if (retryCount > 0) {
+                Assertions.assertDoesNotThrow { Semaphore(listOf(redis), 3, retryCount = retryCount) }
+            } else {
+                assertThrows<IllegalArgumentException> { Semaphore(listOf(redis), 3, retryCount = retryCount) }
+            }
+        }
+
+        @ParameterizedTest(name = "Validated with retry delly - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate retry delly`(retryDelly: Int) {
+            if (retryDelly > 0) {
+                Assertions.assertDoesNotThrow { Semaphore(listOf(redis), 3, retryDelay = retryDelly.milliseconds) }
+            } else {
+                assertThrows<IllegalArgumentException> {
+                    Semaphore(
+                        listOf(redis),
+                        3,
+                        retryDelay = retryDelly.milliseconds,
+                    )
+                }
+            }
+        }
+
+        @ParameterizedTest(name = "Validated with max leases - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate max leases`(maxLeases: Int) {
+            if (maxLeases > 0) {
+                Assertions.assertDoesNotThrow { Semaphore(listOf(redis), maxLeases) }
+            } else {
+                assertThrows<IllegalArgumentException> { Semaphore(listOf(redis), maxLeases) }
+            }
+        }
+
+        @Test
+        fun `validate instance count`() {
+            Assertions.assertDoesNotThrow { Semaphore(listOf(redis), 3) }
+            assertThrows<IllegalArgumentException> { Semaphore(listOf(), 3) }
+        }
+
+        @ParameterizedTest(name = "lock acquired with ttl - {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        fun `validate ttl`(ttl: Int) {
+            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+
+            val semaphore = Semaphore(listOf(redis), 3)
+            if (ttl > 10) {
+                Assertions.assertDoesNotThrow { semaphore.lock("test", ttl.milliseconds) }
+            } else {
+                assertThrows<IllegalArgumentException> { semaphore.lock("test", ttl.milliseconds) }
             }
         }
     }
