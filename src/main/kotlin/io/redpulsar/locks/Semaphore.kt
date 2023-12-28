@@ -2,6 +2,8 @@ package io.redpulsar.locks
 
 import io.redpulsar.locks.core.AbstractMultyInstanceLock
 import io.redpulsar.utils.failsafe
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import redis.clients.jedis.UnifiedJedis
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -16,7 +18,8 @@ class Semaphore(
     private val maxLeases: Int,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
-) : AbstractMultyInstanceLock(instances) {
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+) : AbstractMultyInstanceLock(instances, scope) {
     private val globalKeyPrefix = "semaphore"
     private val leasersKey = "leasers"
 
