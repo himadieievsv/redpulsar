@@ -22,7 +22,6 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("redis.clients:jedis:5.1.0")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.slf4j:slf4j-simple:2.0.9")
 }

@@ -51,6 +51,7 @@ class RedLockTest {
         @Test
         fun `instance is down`() {
             every { redis.set(eq("test"), any(), any()) } throws IOException()
+            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
 
             val redLock = RedLock(listOf(redis))
             val permit = redLock.lock("test")
@@ -60,11 +61,15 @@ class RedLockTest {
             verify(exactly = 3) {
                 redis.set(eq("test"), any<String>(), any<SetParams>())
             }
+            verify(exactly = 3) {
+                redis.eval(any<String>(), eq(listOf("test")), any<List<String>>())
+            }
         }
 
         @Test
         fun `lock already taken`() {
             every { redis.set(eq("test"), any(), any()) } returns null
+            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
 
             val redLock = RedLock(listOf(redis))
             val permit = redLock.lock("test", 1.seconds)
@@ -73,6 +78,9 @@ class RedLockTest {
 
             verify(exactly = 3) {
                 redis.set(eq("test"), any<String>(), any<SetParams>())
+            }
+            verify(exactly = 3) {
+                redis.eval(any<String>(), eq(listOf("test")), any<List<String>>())
             }
         }
 
@@ -167,6 +175,9 @@ class RedLockTest {
             every { redis1.set(eq("test"), any(), any()) } returns null
             every { redis2.set(eq("test"), any(), any()) } returns "OK"
             every { redis3.set(eq("test"), any(), any()) } returns null
+            every { redis1.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+            every { redis2.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+            every { redis3.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
 
             val redLock = RedLock(listOf(redis1, redis2, redis3))
             val permit = redLock.lock("test")
