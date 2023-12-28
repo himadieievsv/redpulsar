@@ -1,6 +1,8 @@
 package io.redpulsar.locks
 
 import io.redpulsar.locks.core.AbstractMultyInstanceLock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import redis.clients.jedis.UnifiedJedis
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -15,7 +17,8 @@ class RedLock(
     instances: List<UnifiedJedis>,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
-) : AbstractMultyInstanceLock(instances) {
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+) : AbstractMultyInstanceLock(instances, scope) {
     init {
         require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }

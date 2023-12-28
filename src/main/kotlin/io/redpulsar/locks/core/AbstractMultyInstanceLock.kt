@@ -1,7 +1,6 @@
 package io.redpulsar.locks.core
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
@@ -19,8 +18,10 @@ import kotlin.time.Duration
  * It uses a quorum to determine if the lock was acquired.
  * Details: https://redis.io/docs/manual/patterns/distributed-locks/
  */
-abstract class AbstractMultyInstanceLock(private val instances: List<UnifiedJedis>) : AbstractLock() {
-    private val scope = CoroutineScope(Dispatchers.IO)
+abstract class AbstractMultyInstanceLock(
+    private val instances: List<UnifiedJedis>,
+    private val scope: CoroutineScope,
+) : AbstractLock() {
     private val quorum: Int = instances.size / 2 + 1
 
     init {

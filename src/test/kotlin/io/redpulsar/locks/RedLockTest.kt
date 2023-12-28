@@ -86,7 +86,6 @@ class RedLockTest {
 
         @Test
         fun `unlock resource`() {
-            val redis = mockk<UnifiedJedis>()
             every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
 
             val redLock = RedLock(listOf(redis))
