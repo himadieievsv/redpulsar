@@ -2,6 +2,7 @@ package io.redpulsar.locks.core
 
 import io.redpulsar.locks.api.Lock
 import io.redpulsar.utils.failsafe
+import mu.KotlinLogging
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
 import java.util.UUID
@@ -11,12 +12,13 @@ import kotlin.time.Duration
  * Common functions for broad range of different locks.
  */
 abstract class AbstractLock : Lock {
-    private val clientId: String = UUID.randomUUID().toString()
+    protected val logger = KotlinLogging.logger {}
+    protected val clientId: String = UUID.randomUUID().toString()
 
     /**
      * Locks the resource on the given Redis instance.
      */
-    protected fun lockInstance(
+    protected open fun lockInstance(
         instance: UnifiedJedis,
         resourceName: String,
         ttl: Duration,
@@ -29,7 +31,7 @@ abstract class AbstractLock : Lock {
     /**
      * Unlocks the resource on the given Redis instance.
      */
-    protected fun unlockInstance(
+    protected open fun unlockInstance(
         instance: UnifiedJedis,
         resourceName: String,
     ) {
