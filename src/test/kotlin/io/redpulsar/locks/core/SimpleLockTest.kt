@@ -4,6 +4,7 @@ import equalsTo
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.redpulsar.locks.SimpleLock
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
