@@ -4,6 +4,8 @@ import equalsTo
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -162,85 +164,81 @@ class RedLockTest {
 
         @Test
         fun `all instances are in quorum`() {
-            every { redis1.set(eq("test"), any(), any()) } returns "OK"
-            every { redis2.set(eq("test"), any(), any()) } returns "OK"
-            every { redis3.set(eq("test"), any(), any()) } returns "OK"
+            val instances = listOf(redis1, redis2, redis3)
+            instances.forEach { redis -> every { redis.set(eq("test"), any(), any()) } returns "OK" }
 
-            val redLock = RedLock(listOf(redis1, redis2, redis3))
+            val redLock = RedLock(instances)
             val permit = redLock.lock("test")
 
             assertTrue(permit)
             verify(exactly = 1) {
-                redis1.set(eq("test"), any<String>(), any<SetParams>())
-            }
-            verify(exactly = 1) {
-                redis2.set(eq("test"), any<String>(), any<SetParams>())
-            }
-            verify(exactly = 1) {
-                redis3.set(eq("test"), any<String>(), any<SetParams>())
+                instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
             }
         }
 
         @Test
         fun `two instances are in quorum`() {
+            val instances = listOf(redis1, redis2, redis3)
             every { redis1.set(eq("test"), any(), any()) } returns "OK"
             every { redis2.set(eq("test"), any(), any()) } returns null
             every { redis3.set(eq("test"), any(), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(redis1, redis2, redis3))
+            val redLock = RedLock(instances)
             val permit = redLock.lock("test")
 
             assertTrue(permit)
             verify(exactly = 1) {
-                redis1.set(eq("test"), any<String>(), any<SetParams>())
-            }
-            verify(exactly = 1) {
-                redis2.set(eq("test"), any<String>(), any<SetParams>())
-            }
-            verify(exactly = 1) {
-                redis3.set(eq("test"), any<String>(), any<SetParams>())
+                instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
             }
             verify(exactly = 0) {
-                redis1.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-            }
-            verify(exactly = 0) {
-                redis2.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-            }
-            verify(exactly = 0) {
-                redis2.eval(any<String>(), eq(listOf("test")), any<List<String>>())
+                instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
             }
         }
 
         @Test
         fun `quorum wasn't reach`() {
+            val instances = listOf(redis1, redis2, redis3)
             every { redis1.set(eq("test"), any(), any()) } returns null
             every { redis2.set(eq("test"), any(), any()) } returns "OK"
             every { redis3.set(eq("test"), any(), any()) } returns null
-            every { redis1.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
-            every { redis2.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
-            every { redis3.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+            instances.forEach { redis ->
+                every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+            }
 
-            val redLock = RedLock(listOf(redis1, redis2, redis3))
+            val redLock = RedLock(instances)
             val permit = redLock.lock("test")
 
             assertFalse(permit)
             verify(exactly = 3) {
-                redis1.set(eq("test"), any<String>(), any<SetParams>())
+                instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
             }
             verify(exactly = 3) {
-                redis2.set(eq("test"), any<String>(), any<SetParams>())
+                instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
+            }
+        }
+
+        @Test
+        fun `lock declined due to clock drift`() {
+            val instances = listOf(redis1, redis2, redis3)
+            every { redis1.set(eq("test"), any(), any()) } returns "OK"
+            every { redis2.set(eq("test"), any(), any()) } answers {
+                runBlocking { delay(20) }
+                "OK"
+            }
+            every { redis3.set(eq("test"), any(), any()) } returns "OK"
+            instances.forEach { redis ->
+                every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
+            }
+
+            val redLock = RedLock(instances)
+            val permit = redLock.lock("test", 20.milliseconds)
+
+            assertFalse(permit)
+            verify(exactly = 3) {
+                instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
             }
             verify(exactly = 3) {
-                redis3.set(eq("test"), any<String>(), any<SetParams>())
-            }
-            verify(exactly = 3) {
-                redis1.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-            }
-            verify(exactly = 3) {
-                redis2.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-            }
-            verify(exactly = 3) {
-                redis2.eval(any<String>(), eq(listOf("test")), any<List<String>>())
+                instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
             }
         }
     }
