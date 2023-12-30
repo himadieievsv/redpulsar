@@ -1,5 +1,6 @@
 package io.redpulsar.core.locks.abstracts
 
+import io.redpulsar.core.locks.abstracts.Backend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,19 +20,19 @@ import kotlin.time.Duration
  * Details: https://redis.io/docs/manual/patterns/distributed-locks/
  */
 abstract class AbstractMultyInstanceLock(
-    private val instances: List<UnifiedJedis>,
+    private val backends: List<Backend>,
     private val scope: CoroutineScope,
 ) : AbstractLock() {
-    private val quorum: Int = instances.size / 2 + 1
+    private val quorum: Int = backends.size / 2 + 1
 
     init {
-        require(instances.isNotEmpty()) { "Redis instances must not be empty" }
+        require(backends.isNotEmpty()) { "Redis instances must not be empty" }
     }
 
     override fun unlock(resourceName: String) {
         try {
-            allInstances { jedis ->
-                unlockInstance(jedis, resourceName)
+            allInstances { backend ->
+                unlockInstance(backend, resourceName)
             }
         } catch (e: CancellationException) {
             logger.error(e) { "Unlocking coroutines unexpectedly terminated." }
@@ -51,16 +52,16 @@ abstract class AbstractMultyInstanceLock(
             val acceptedLocks = AtomicInteger(0)
             val timeDiff =
                 measureTimeMillis {
-                    allInstances { jedis ->
-                        if (lockInstance(jedis, resourceName, ttl)) acceptedLocks.incrementAndGet()
+                    allInstances { backend ->
+                        if (lockInstance(backend, resourceName, ttl)) acceptedLocks.incrementAndGet()
                     }
                 }
             val validity = ttl.inWholeMilliseconds - timeDiff - clockDrift
             if (acceptedLocks.get() >= quorum && validity > 0) {
                 return true
             } else {
-                allInstances { jedis ->
-                    unlockInstance(jedis, resourceName)
+                allInstances { backend ->
+                    unlockInstance(backend, resourceName)
                 }
             }
             runBlocking {
@@ -70,12 +71,12 @@ abstract class AbstractMultyInstanceLock(
         return false
     }
 
-    private fun allInstances(block: suspend (jedis: UnifiedJedis) -> Unit) {
+    private fun allInstances(block: suspend (backend: Backend) -> Unit) {
         val jobs = mutableListOf<Job>()
-        instances.forEach { jedis ->
+        backends.forEach { backend ->
             jobs.add(
                 scope.launch {
-                    block(jedis)
+                    block(backend)
                 },
             )
         }

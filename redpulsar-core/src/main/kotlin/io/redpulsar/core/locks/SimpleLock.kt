@@ -1,9 +1,9 @@
 package io.redpulsar.core.locks
 
 import io.redpulsar.core.locks.abstracts.AbstractLock
+import io.redpulsar.core.locks.abstracts.Backend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import redis.clients.jedis.UnifiedJedis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -11,7 +11,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * A distributed lock implementation that using only single Redis Cluster or Redis instance.
  */
 class SimpleLock(
-    private val redis: UnifiedJedis,
+    private val backend: Backend,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
 ) : AbstractLock() {
@@ -27,7 +27,7 @@ class SimpleLock(
         require(ttl > 2.milliseconds) { "Timeout is too small." }
         var retries = retryCount
         do {
-            if (lockInstance(redis, resourceName, ttl)) {
+            if (lockInstance(backend, resourceName, ttl)) {
                 return true
             }
             runBlocking {
@@ -38,6 +38,6 @@ class SimpleLock(
     }
 
     override fun unlock(resourceName: String) {
-        unlockInstance(redis, resourceName)
+        unlockInstance(backend, resourceName)
     }
 }

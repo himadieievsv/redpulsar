@@ -1,6 +1,7 @@
 package io.redpulsar.core.locks
 
 import io.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
+import io.redpulsar.core.locks.abstracts.Backend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import redis.clients.jedis.UnifiedJedis
@@ -14,11 +15,11 @@ import kotlin.time.Duration.Companion.milliseconds
  * See details in [AbstractMultyInstanceLock].
  */
 class RedLock(
-    instances: List<UnifiedJedis>,
+    backends: List<Backend>,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultyInstanceLock(instances, scope) {
+) : AbstractMultyInstanceLock(backends, scope) {
     init {
         require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
