@@ -16,13 +16,10 @@ abstract class AbstractLock : Lock {
      * Locks the resource on the given Redis instance.
      */
     protected open fun lockInstance(
-        backend: Backend,
+        backend: LocksBackend,
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        // val lockParams = SetParams().nx().px(ttl.inWholeMilliseconds)
-        // val result = failsafe(null) { instance.set(resourceName, clientId, lockParams) }
-
         return backend.setLock(resourceName, clientId, ttl) != null
     }
 
@@ -30,17 +27,9 @@ abstract class AbstractLock : Lock {
      * Unlocks the resource on the given Redis instance.
      */
     protected open fun unlockInstance(
-        backend: Backend,
+        backend: LocksBackend,
         resourceName: String,
     ) {
-//        val luaScript =
-//            """
-//            if redis.call("get", KEYS[1]) == ARGV[1] then
-//                return redis.call("del", KEYS[1])
-//            end
-//            return 0
-//            """.trimIndent()
-//        failsafe { instance.eval(luaScript, listOf(resourceName), listOf(clientId)) }
         backend.removeLock(resourceName, clientId)
     }
 }

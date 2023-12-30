@@ -1,13 +1,11 @@
 package io.redpulsar.core.locks.abstracts
 
-import io.redpulsar.core.locks.abstracts.Backend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import redis.clients.jedis.UnifiedJedis
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.system.measureTimeMillis
@@ -20,7 +18,7 @@ import kotlin.time.Duration
  * Details: https://redis.io/docs/manual/patterns/distributed-locks/
  */
 abstract class AbstractMultyInstanceLock(
-    private val backends: List<Backend>,
+    private val backends: List<LocksBackend>,
     private val scope: CoroutineScope,
 ) : AbstractLock() {
     private val quorum: Int = backends.size / 2 + 1
@@ -30,12 +28,8 @@ abstract class AbstractMultyInstanceLock(
     }
 
     override fun unlock(resourceName: String) {
-        try {
-            allInstances { backend ->
-                unlockInstance(backend, resourceName)
-            }
-        } catch (e: CancellationException) {
-            logger.error(e) { "Unlocking coroutines unexpectedly terminated." }
+        allInstances { backend ->
+            unlockInstance(backend, resourceName)
         }
     }
 
@@ -71,12 +65,16 @@ abstract class AbstractMultyInstanceLock(
         return false
     }
 
-    private fun allInstances(block: suspend (backend: Backend) -> Unit) {
+    private fun allInstances(block: suspend (backend: LocksBackend) -> Unit) {
         val jobs = mutableListOf<Job>()
         backends.forEach { backend ->
             jobs.add(
                 scope.launch {
-                    block(backend)
+                    try {
+                        block(backend)
+                    } catch (e: CancellationException) {
+                        logger.error(e) { "Coroutines unexpectedly terminated." }
+                    }
                 },
             )
         }

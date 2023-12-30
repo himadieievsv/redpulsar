@@ -1,8 +1,6 @@
-import io.mockk.MockKMatcherScope
 import redis.clients.jedis.CommandArguments
 import redis.clients.jedis.commands.ProtocolCommand
 import redis.clients.jedis.params.SetParams
-import kotlin.time.Duration
 
 /** Interface for testing tags. Avoiding manual string typing. */
 interface TestTags {

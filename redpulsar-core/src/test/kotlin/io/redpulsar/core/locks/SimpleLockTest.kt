@@ -1,11 +1,10 @@
 package io.redpulsar.core.locks
 
 import TestTags
-import equalsTo
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.redpulsar.core.locks.abstracts.Backend
+import io.redpulsar.core.locks.abstracts.LocksBackend
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,19 +14,16 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import redis.clients.jedis.UnifiedJedis
-import redis.clients.jedis.params.SetParams
-import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.UNIT)
 class SimpleLockTest {
-    private lateinit var backend: Backend
+    private lateinit var backend: LocksBackend
 
     @BeforeEach
     fun setUp() {
-        backend = mockk<Backend>()
+        backend = mockk<LocksBackend>()
     }
 
     @ParameterizedTest(name = "lock acquired with {0} seconds ttl")

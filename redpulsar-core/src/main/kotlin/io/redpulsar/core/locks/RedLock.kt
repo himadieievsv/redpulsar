@@ -1,11 +1,9 @@
 package io.redpulsar.core.locks
 
 import io.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
-import io.redpulsar.core.locks.abstracts.Backend
+import io.redpulsar.core.locks.abstracts.LocksBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import redis.clients.jedis.UnifiedJedis
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -15,7 +13,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * See details in [AbstractMultyInstanceLock].
  */
 class RedLock(
-    backends: List<Backend>,
+    backends: List<LocksBackend>,
     private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
@@ -30,11 +28,6 @@ class RedLock(
         ttl: Duration,
     ): Boolean {
         require(ttl > 2.milliseconds) { "Timeout must be greater that min clock drift." }
-        return try {
-            multyLock(resourceName, ttl, 2.milliseconds, retryCount, retryDelay)
-        } catch (e: CancellationException) {
-            logger.error(e) { "Coroutines unexpectedly terminated." }
-            false
-        }
+        return multyLock(resourceName, ttl, 2.milliseconds, retryCount, retryDelay)
     }
 }

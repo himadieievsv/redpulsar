@@ -3,6 +3,8 @@ package integrationtests
 import TestTags
 import getInstances
 import io.redpulsar.core.locks.RedLock
+import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.jedis.locks.JedisLocksBackend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -16,18 +18,20 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
-class RedLockTest {
+class RedLockIntegrationTest {
     private lateinit var instances: List<UnifiedJedis>
+    private lateinit var backends: List<LocksBackend>
 
     @BeforeEach
     fun setUp() {
         instances = getInstances()
         instances.forEach { it.flushAll() }
+        backends = instances.map { JedisLocksBackend(it) }
     }
 
     @Test
     fun `obtain lock`() {
-        val redLock = RedLock(instances)
+        val redLock = RedLock(backends)
         val permit = redLock.lock("test", 10.seconds)
 
         assertTrue(permit)
@@ -38,7 +42,7 @@ class RedLockTest {
 
     @Test
     fun `release lock`() {
-        val redLock = RedLock(instances)
+        val redLock = RedLock(backends)
         redLock.lock("test", 10.seconds)
         redLock.unlock("test")
 
@@ -47,8 +51,8 @@ class RedLockTest {
 
     @Test
     fun `another client can re-acquire lock`() {
-        val redLock = RedLock(instances)
-        val redLock2 = RedLock(instances = instances, retryDelay = 50.milliseconds, retryCount = 2)
+        val redLock = RedLock(backends)
+        val redLock2 = RedLock(backends = backends, retryDelay = 50.milliseconds, retryCount = 2)
 
         assertTrue(redLock.lock("test", 10.seconds))
         assertFalse(redLock2.lock("test", 10.milliseconds))
@@ -59,8 +63,8 @@ class RedLockTest {
 
     @Test
     fun `another client can re-acquire lock due to expiration`() {
-        val redLock = RedLock(instances)
-        val redLock2 = RedLock(instances = instances, retryDelay = 30.milliseconds, retryCount = 2)
+        val redLock = RedLock(backends)
+        val redLock2 = RedLock(backends = backends, retryDelay = 30.milliseconds, retryCount = 2)
 
         assertTrue(redLock.lock("test", 200.milliseconds))
         assertFalse(redLock2.lock("test", 10.milliseconds))
@@ -71,8 +75,8 @@ class RedLockTest {
 
     @Test
     fun `dont allow to lock again`() {
-        val redLock = RedLock(instances)
-        val redLock2 = RedLock(instances)
+        val redLock = RedLock(backends)
+        val redLock2 = RedLock(backends)
 
         assertTrue(redLock.lock("test", 10.seconds))
         assertFalse(redLock2.lock("test", 10.milliseconds))

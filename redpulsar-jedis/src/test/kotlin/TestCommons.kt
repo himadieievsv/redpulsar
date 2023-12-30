@@ -25,11 +25,11 @@ fun getInstances(): List<UnifiedJedis> {
         }
 
     val hostPort1 = getHostPort(1)
-    val jedis1 = JedisPooled(poolConfig, hostPort1.host, hostPort1.port, 20)
+    val jedis1 = JedisPooled(poolConfig, hostPort1.host, hostPort1.port, 50)
     val hostPort2 = getHostPort(2)
-    val jedis2 = JedisPooled(poolConfig, hostPort2.host, hostPort2.port, 20)
+    val jedis2 = JedisPooled(poolConfig, hostPort2.host, hostPort2.port, 50)
     val hostPort3 = getHostPort(3)
-    val jedis3 = JedisPooled(poolConfig, hostPort3.host, hostPort3.port, 20)
+    val jedis3 = JedisPooled(poolConfig, hostPort3.host, hostPort3.port, 50)
     return listOf(jedis1, jedis2, jedis3)
 }
 

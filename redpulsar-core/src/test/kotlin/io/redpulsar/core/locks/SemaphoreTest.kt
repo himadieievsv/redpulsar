@@ -3,7 +3,7 @@ package io.redpulsar.core.locks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.redpulsar.core.locks.abstracts.Backend
+import io.redpulsar.core.locks.abstracts.LocksBackend
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -13,20 +13,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import redis.clients.jedis.Pipeline
-import redis.clients.jedis.UnifiedJedis
-import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class SemaphoreTest {
     @Nested
     inner class SingleRedisInstance {
-        private lateinit var backend: Backend
+        private lateinit var backend: LocksBackend
 
         @BeforeEach
         fun setUp() {
-            backend = mockk<Backend>()
+            backend = mockk<LocksBackend>()
         }
 
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
@@ -39,7 +36,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns "OK"
 
@@ -62,7 +59,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             }
             verify(exactly = 0) {
@@ -151,12 +148,12 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns null
             every {
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"), match { it.startsWith("semaphore:test:") }, any()
+                    eq("semaphore:leasers:test"), match { it.startsWith("semaphore:test:") }, any(),
                 )
             } returns "OK"
             // cleaning up
@@ -193,11 +190,13 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
                 // unlocking
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"), match { it.startsWith("semaphore:test:") }, any()
+                    eq("semaphore:leasers:test"),
+                    match { it.startsWith("semaphore:test:") },
+                    any(),
                 )
                 // cleaning up
                 backend.cleanUpExpiredSemaphoreLocks(
@@ -220,7 +219,7 @@ class SemaphoreTest {
                 backend.removeSemaphoreLock(
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },
-                    any()
+                    any(),
                 )
             } returns "OK"
             every {
@@ -235,7 +234,7 @@ class SemaphoreTest {
                 backend.removeSemaphoreLock(
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },
-                    any()
+                    any(),
                 )
                 // cleaning up
                 backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
@@ -304,7 +303,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     any(),
-                    eq(ttl.seconds)
+                    eq(ttl.seconds),
                 )
             } returns "OK"
 
@@ -319,30 +318,30 @@ class SemaphoreTest {
 
     @Nested
     inner class MultipleRedisInstance {
-        private lateinit var backend1: Backend
-        private lateinit var backend2: Backend
-        private lateinit var backend3: Backend
-        private lateinit var instances: List<Backend>
+        private lateinit var backend1: LocksBackend
+        private lateinit var backend2: LocksBackend
+        private lateinit var backend3: LocksBackend
+        private lateinit var instances: List<LocksBackend>
 
         @BeforeEach
         fun setUp() {
-            backend1 = mockk<Backend>()
-            backend2 = mockk<Backend>()
-            backend3 = mockk<Backend>()
+            backend1 = mockk<LocksBackend>()
+            backend2 = mockk<LocksBackend>()
+            backend3 = mockk<LocksBackend>()
             instances = listOf(backend1, backend2, backend3)
         }
 
         @Test
         fun `all instances are in quorum`() {
             instances.forEach { backend ->
-                //every { redis.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
+                // every { redis.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
                 every {
                     backend.setSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
                         any(),
                         eq(3),
-                        any()
+                        any(),
                     )
                 } returns "OK"
             }
@@ -365,7 +364,7 @@ class SemaphoreTest {
                         match { it.startsWith("semaphore:test:") },
                         any(),
                         eq(3),
-                        any()
+                        any(),
                     )
                 }
                 verify(exactly = 0) {
@@ -386,7 +385,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns "OK"
             every {
@@ -395,7 +394,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns null
             every {
@@ -404,7 +403,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns "OK"
 
@@ -427,7 +426,7 @@ class SemaphoreTest {
                         match { it.startsWith("semaphore:test:") },
                         any(),
                         eq(3),
-                        any()
+                        any(),
                     )
                 }
                 verify(exactly = 0) {
@@ -465,7 +464,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns null
             every {
@@ -474,7 +473,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns null
             every {
@@ -483,7 +482,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any()
+                    any(),
                 )
             } returns "OK"
             instances.forEach { backend ->
@@ -491,14 +490,14 @@ class SemaphoreTest {
                     backend.removeSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
-                        any()
+                        any(),
                     )
                 } returns "OK"
                 // cleaning up
                 every {
                     backend.cleanUpExpiredSemaphoreLocks(
                         eq("semaphore:leasers:test"),
-                        eq("semaphore:test")
+                        eq("semaphore:test"),
                     )
                 } returns "OK"
             }
@@ -523,13 +522,13 @@ class SemaphoreTest {
                         match { it.startsWith("semaphore:test:") },
                         any(),
                         eq(3),
-                        any()
+                        any(),
                     )
                     // unlocking
                     backend.removeSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
-                        any()
+                        any(),
                     )
                     // cleaning up
                     backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
