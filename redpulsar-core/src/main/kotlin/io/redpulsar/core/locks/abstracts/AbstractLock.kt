@@ -5,7 +5,7 @@ import io.redpulsar.core.utils.failsafe
 import mu.KotlinLogging
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
-import java.util.*
+import java.util.UUID
 import kotlin.time.Duration
 
 /**

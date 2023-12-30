@@ -1,5 +1,4 @@
-group = "io.redpulsar"
-version = "0.4.0"
+group = "io.redpulsar-core"
 
 dependencies {
     api("redis.clients:jedis:5.1.0")

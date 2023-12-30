@@ -15,6 +15,9 @@ allprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "idea")
 
+    group = "io.redpulsar"
+    version = "0.4.0"
+
     repositories {
         mavenCentral()
     }
@@ -34,10 +37,8 @@ subprojects {
         }
     }
 
-    java {
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
-        }
+    kotlin {
+        jvmToolchain(17)
     }
 
     dependencies {
