@@ -1,4 +1,4 @@
-package io.redpulsar.jedis.integration_tests
+package io.redpulsar.jedis.integrationtests
 
 import TestTags
 import getInstances

@@ -1,12 +1,6 @@
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import redis.clients.jedis.CommandArguments
-import redis.clients.jedis.Connection
-import redis.clients.jedis.HostAndPort
-import redis.clients.jedis.JedisPooled
-import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.commands.ProtocolCommand
 import redis.clients.jedis.params.SetParams
-import java.time.Duration
 
 /** Interface for testing tags. Avoiding manual string typing. */
 interface TestTags {
