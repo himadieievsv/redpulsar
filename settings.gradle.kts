@@ -10,3 +10,4 @@
 
 rootProject.name = "redpulsar"
 include("redpulsar-core")
+include("redpulsar-jedis")

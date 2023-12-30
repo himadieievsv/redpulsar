@@ -44,7 +44,7 @@ subprojects {
     dependencies {
         api("redis.clients:jedis:5.1.0") // TODO move
         api("io.github.microutils:kotlin-logging:3.0.5")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // TODO move
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
         testImplementation(platform("org.junit:junit-bom:5.10.1"))
         testImplementation("org.junit.jupiter:junit-jupiter")

@@ -1,4 +1,4 @@
-package io.redpulsar.core.locks.integration
+package io.redpulsar.jedis.integration_tests
 
 import TestTags
 import getInstances
@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
-class SimpleLockIntegrationTest {
+class SimpleLockTest {
     private lateinit var redis: UnifiedJedis
 
     @BeforeEach

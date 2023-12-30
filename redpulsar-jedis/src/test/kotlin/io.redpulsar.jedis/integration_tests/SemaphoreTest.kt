@@ -1,4 +1,4 @@
-package io.redpulsar.core.locks.integration
+package io.redpulsar.jedis.integration_tests
 
 import TestTags
 import getInstances
@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
-class SemaphoreIntegrationTest {
+class SemaphoreTest {
     private lateinit var instances: List<UnifiedJedis>
 
     @BeforeEach
