@@ -11,34 +11,43 @@ plugins {
     idea
 }
 
-repositories {
-    mavenCentral()
-}
+allprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "idea")
 
-dependencies {
-    api("redis.clients:jedis:5.1.0")
-    api("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-
-    testImplementation(platform("org.junit:junit-bom:5.10.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("org.slf4j:slf4j-simple:2.0.9")
-}
-
-tasks.test {
-    useJUnitPlatform {
-        excludeTags(System.getProperty("excludeTags", "no-tag"))
+    repositories {
+        mavenCentral()
     }
-    reports {
-        junitXml.apply {
-            isOutputPerTestCase = true
+}
+
+subprojects {
+    apply(plugin = "kotlin")
+
+    tasks.test {
+        useJUnitPlatform {
+            excludeTags(System.getProperty("excludeTags", "no-tag"))
+        }
+        reports {
+            junitXml.apply {
+                isOutputPerTestCase = true
+            }
         }
     }
-}
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
+
+    dependencies {
+        api("redis.clients:jedis:5.1.0") // TODO move
+        api("io.github.microutils:kotlin-logging:3.0.5")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // TODO move
+
+        testImplementation(platform("org.junit:junit-bom:5.10.1"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("io.mockk:mockk:1.13.8")
+        testImplementation("org.slf4j:slf4j-simple:2.0.9")
     }
 }

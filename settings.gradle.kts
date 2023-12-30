@@ -8,4 +8,5 @@
  * This project uses @Incubating APIs which are subject to change.
  */
 
-rootProject.name = "distributed-locks"
+rootProject.name = "redpulsar"
+include("redpulsar-core")
