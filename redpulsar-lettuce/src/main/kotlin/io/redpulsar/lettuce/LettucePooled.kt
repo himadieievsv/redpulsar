@@ -18,11 +18,11 @@ class LettucePooled<K, V>(
 ) : AutoCloseable {
     /**
      * Alternative constructor that uses a supplier and pool config for connections to redis.
-     * @param poolConfig a configuration for the pool.
+     * @param poolConfig a configuration for the pool, argument have a default value.
      * @param connectionSupplier a supplier for connections to redis.
      */
     constructor(
-        poolConfig: GenericObjectPoolConfig<StatefulRedisConnection<K, V>>,
+        poolConfig: GenericObjectPoolConfig<StatefulRedisConnection<K, V>> = GenericObjectPoolConfig(),
         connectionSupplier: () -> StatefulRedisConnection<K, V>,
     ) : this(ConnectionPoolSupport.createGenericObjectPool(connectionSupplier, poolConfig))
 
