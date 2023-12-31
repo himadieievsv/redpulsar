@@ -27,9 +27,9 @@ fun SetArgs.equalsTo(other: SetArgs): Boolean {
 fun getInstances(): List<LettucePooled<String, String>> {
     val poolConfig =
         GenericObjectPoolConfig<StatefulRedisConnection<String, String>>().apply {
-            maxTotal = 64
-            maxIdle = 8
-            minIdle = 2
+            maxTotal = 8
+            maxIdle = 2
+            minIdle = 1
             setMaxWait(Duration.ofMillis(100))
             blockWhenExhausted = true
         }
