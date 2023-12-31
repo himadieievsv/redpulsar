@@ -29,7 +29,6 @@ class SimpleLockTest {
     @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
     @ValueSource(ints = [1, 2, 5, 7, 10])
     fun `lock acquired`(ttl: Int) {
-        // every { redis.set(eq("test"), any(), any()) } returns "OK"
         every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
         val simpleLock = SimpleLock(backend)
@@ -37,13 +36,6 @@ class SimpleLockTest {
 
         assertTrue(permit)
         verify(exactly = 1) {
-//            redis.set(
-//                eq("test"),
-//                any<String>(),
-//                match<SetParams> {
-//                    it.equalsTo(SetParams().nx().px(ttl.seconds.inWholeMilliseconds))
-//                },
-//            )
             backend.setLock(eq("test"), any(), any())
         }
     }
@@ -63,22 +55,15 @@ class SimpleLockTest {
 
     @Test
     fun `unlock resource`() {
-//        every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
         every { backend.removeLock(eq("test"), any()) } returns "OK"
 
         val simpleLock = SimpleLock(backend)
         simpleLock.unlock("test")
 
         verify(exactly = 1) {
-//            redis.eval(
-//                any<String>(),
-//                eq(listOf("test")),
-//                any<List<String>>(),
-//            )
             backend.removeLock(eq("test"), any())
         }
         verify(exactly = 0) {
-            // redis.set(any<String>(), any(), any())
             backend.setLock(any(), any(), any())
         }
     }
@@ -106,7 +91,6 @@ class SimpleLockTest {
     @ParameterizedTest(name = "lock acquired with ttl - {0}")
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
     fun `validate ttl`(ttl: Int) {
-        // every { redis.set(eq("test"), any(), eq(ttl.milliseconds)) } returns "OK"
         every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
         val simpleLock = SimpleLock(backend)

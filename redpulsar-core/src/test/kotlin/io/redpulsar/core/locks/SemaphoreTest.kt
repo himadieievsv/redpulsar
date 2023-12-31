@@ -29,7 +29,6 @@ class SemaphoreTest {
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
         @ValueSource(ints = [1, 2, 5, 7, 10])
         fun `lock acquired`(ttl: Int) {
-            // every { redis.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -45,15 +44,6 @@ class SemaphoreTest {
 
             assertTrue(permit)
             verify(exactly = 1) {
-//                redis.eval(
-//                    any<String>(),
-//                    match<List<String>> {
-//                        it.size == 2 &&
-//                                it[0] == "semaphore:leasers:test" &&
-//                                it[1].startsWith("semaphore:test:")
-//                    },
-//                    any<List<String>>(),
-//                )
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },

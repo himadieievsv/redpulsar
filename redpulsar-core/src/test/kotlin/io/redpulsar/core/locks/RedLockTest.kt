@@ -35,30 +35,18 @@ class RedLockTest {
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
         @ValueSource(ints = [1, 2, 5, 7, 10])
         fun `lock acquired`(ttl: Int) {
-            // every { redis.set(eq("test"), any(), any()) } returns "OK"
             every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
             val permit = redLock.lock("test", ttl.seconds)
 
             assertTrue(permit)
-//            verify(exactly = 1) {
-//                redis.set(
-//                    eq("test"),
-//                    any<String>(),
-//                    match<SetParams> {
-//                        it.equalsTo(SetParams().nx().px(ttl.seconds.inWholeMilliseconds))
-//                    },
-//                )
-//            }
             verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
             verify(exactly = 0) { backend.removeLock(any(), any()) }
         }
 
         @Test
         fun `lock already taken or instance is down`() {
-//            every { redis.set(eq("test"), any(), any()) } throws IOException()
-//            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
             every { backend.setLock(eq("test"), any(), any()) } returns null
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
@@ -68,13 +56,9 @@ class RedLockTest {
             assertFalse(permit)
 
             verify(exactly = 3) {
-                // redis.set(eq("test"), any<String>(), any<SetParams>())
                 backend.setLock(eq("test"), any(), any())
                 backend.removeLock(eq("test"), any())
             }
-//            verify(exactly = 3) {
-//                redis.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-//            }
         }
 
         @Test
@@ -126,27 +110,8 @@ class RedLockTest {
             verify(exactly = 1) { backend.removeLock(any(), any()) }
         }
 
-//        @Test
-//        fun `lock already taken`() {
-//            every { redis.set(eq("test"), any(), any()) } returns null
-//            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
-//
-//            val redLock = RedLock(listOf(redis))
-//            val permit = redLock.lock("test", 1.seconds)
-//
-//            assertFalse(permit)
-//
-//            verify(exactly = 3) {
-//                redis.set(eq("test"), any<String>(), any<SetParams>())
-//            }
-//            verify(exactly = 3) {
-//                redis.eval(any<String>(), eq(listOf("test")), any<List<String>>())
-//            }
-//        }
-
         @Test
         fun `unlock resource`() {
-            // every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
@@ -154,15 +119,9 @@ class RedLockTest {
             redLock.unlock("test")
 
             verify(exactly = 1) {
-//                redis.eval(
-//                    any<String>(),
-//                    eq(listOf("test")),
-//                    any<List<String>>(),
-//                )
                 backend.removeLock(eq("test"), any())
             }
             verify(exactly = 0) {
-                // redis.set(any<String>(), any(), any())
                 backend.setLock(any(), any(), any())
             }
         }
@@ -198,7 +157,6 @@ class RedLockTest {
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate ttl`(ttl: Int) {
-            // every { redis.set(eq("test"), any(), any()) } returns "OK"
             every { backend.setLock(eq("test"), any(), eq(ttl.milliseconds)) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
@@ -227,7 +185,6 @@ class RedLockTest {
 
         @Test
         fun `all instances are in quorum`() {
-            // instances.forEach { redis -> every { redis.set(eq("test"), any(), any()) } returns "OK" }
             instances.forEach { backend ->
                 every {
                     backend.setLock(eq("test"), any(), any())
@@ -239,20 +196,15 @@ class RedLockTest {
 
             assertTrue(permit)
             verify(exactly = 1) {
-                // instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
                 instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
             }
             verify(exactly = 0) {
-                // instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
                 instances.forEach { backend -> backend.removeLock(any(), any()) }
             }
         }
 
         @Test
         fun `two instances are in quorum`() {
-//            every { redis1.set(eq("test"), any(), any()) } returns "OK"
-//            every { redis2.set(eq("test"), any(), any()) } returns null
-//            every { redis3.set(eq("test"), any(), any()) } returns "OK"
             every { backend1.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend2.setLock(eq("test"), any(), any()) } returns null
             every { backend3.setLock(eq("test"), any(), any()) } returns "OK"
@@ -262,20 +214,15 @@ class RedLockTest {
 
             assertTrue(permit)
             verify(exactly = 1) {
-                // instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
                 instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
             }
             verify(exactly = 0) {
-                // instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
                 instances.forEach { backend -> backend.removeLock(any(), any()) }
             }
         }
 
         @Test
         fun `quorum wasn't reach`() {
-//            every { redis1.set(eq("test"), any(), any()) } returns null
-//            every { redis2.set(eq("test"), any(), any()) } returns "OK"
-//            every { redis3.set(eq("test"), any(), any()) } returns null
             every { backend1.setLock(eq("test"), any(), any()) } returns null
             every { backend2.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend3.setLock(eq("test"), any(), any()) } returns null
@@ -288,23 +235,15 @@ class RedLockTest {
 
             assertFalse(permit)
             verify(exactly = 3) {
-                // instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
                 instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
             }
             verify(exactly = 3) {
-                // instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
                 instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
             }
         }
 
         @Test
         fun `lock declined due to clock drift`() {
-//            every { redis1.set(eq("test"), any(), any()) } returns "OK"
-//            every { redis2.set(eq("test"), any(), any()) } answers {
-//                runBlocking { delay(20) }
-//                "OK"
-//            }
-//            every { redis3.set(eq("test"), any(), any()) } returns "OK"
             every { backend1.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend2.setLock(eq("test"), any(), any()) } answers {
                 runBlocking { delay(20) }
@@ -320,11 +259,9 @@ class RedLockTest {
 
             assertFalse(permit)
             verify(exactly = 3) {
-                // instances.forEach { redis -> redis.set(eq("test"), any<String>(), any<SetParams>()) }
                 instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
             }
             verify(exactly = 3) {
-                // instances.forEach { redis -> redis.eval(any<String>(), eq(listOf("test")), any<List<String>>()) }
                 instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
             }
         }
