@@ -67,5 +67,6 @@ class Semaphore(
         backend.cleanUpExpiredSemaphoreLocks(leasersKey, leaserValidityKeyPrefix)
     }
 
+    @Suppress("NOTHING_TO_INLINE")
     private inline fun buildKey(vararg parts: String) = globalKeyPrefix + ":" + parts.joinToString(":")
 }
