@@ -10,7 +10,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 
 /**
  * A handy wrapper for Lettuce Redis Client that provides a simple way to use functionally
- * without warring about managing connections.
+ * without worrying about managing connections.
  * @param connectionPool a pool of connections to redis.
  */
 class LettucePooled<K, V>(
