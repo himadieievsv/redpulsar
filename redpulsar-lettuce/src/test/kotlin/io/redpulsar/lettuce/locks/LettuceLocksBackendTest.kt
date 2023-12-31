@@ -14,11 +14,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class LettuceLocksBackendTest {
     private lateinit var redis: LettucePooled<String, String>
     private lateinit var backend: LettuceLocksBackend
@@ -34,6 +36,7 @@ class LettuceLocksBackendTest {
         every { pool.borrowObject() } returns connection
         every { pool.returnObject(connection) } returns Unit
         every { connection.sync() } returns sync
+        every { connection.isMulti } returns false
     }
 
     @Nested

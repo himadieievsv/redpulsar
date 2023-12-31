@@ -45,7 +45,11 @@ jobs:
           distribution: 'temurin'
       - name: Run tests
         run: |
-          ./gradlew :redpulsar-core:test :redpulsar-jedis:test -DexcludeTags="unit"
+          ./gradlew \
+          :redpulsar-core:test \
+          :redpulsar-jedis:test \
+          :redpulsar-lettuce:test \
+          -DexcludeTags="unit"
       - name: Archive test report
         uses: actions/upload-artifact@v3
         with:
