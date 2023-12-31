@@ -14,7 +14,3 @@ inline fun <R> failsafe(
         defaultRerunValue
     }
 }
-
-fun failsafe(block: () -> Unit) {
-    failsafe(Unit, block)
-}
