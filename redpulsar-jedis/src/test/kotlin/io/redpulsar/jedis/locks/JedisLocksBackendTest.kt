@@ -1,5 +1,6 @@
 package io.redpulsar.jedis.locks
 
+import TestTags
 import equalsTo
 import io.mockk.every
 import io.mockk.mockk
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import redis.clients.jedis.Pipeline
 import redis.clients.jedis.UnifiedJedis
@@ -16,6 +18,7 @@ import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class JedisLocksBackendTest {
     private lateinit var redis: UnifiedJedis
     private lateinit var lock: JedisLocksBackend

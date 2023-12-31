@@ -22,7 +22,11 @@ jobs:
           path: build/reports/ktlint/**/*.txt
       - name: Run tests
         run: |
-          ./gradlew :redpulsar-core:test :redpulsar-jedis:test -DexcludeTags="integration"
+          ./gradlew \
+          :redpulsar-core:test \
+          :redpulsar-jedis:test \
+          :redpulsar-lettuce:test \
+          -DexcludeTags="integration"
       - name: Archive test report
         uses: actions/upload-artifact@v3
         with:

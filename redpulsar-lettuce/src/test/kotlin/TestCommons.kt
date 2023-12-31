@@ -11,6 +11,7 @@ import java.time.Duration
 interface TestTags {
     companion object {
         const val INTEGRATIONS = "integration"
+        const val UNIT = "unit"
     }
 }
 
