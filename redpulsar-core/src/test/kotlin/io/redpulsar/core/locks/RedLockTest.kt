@@ -63,7 +63,7 @@ class RedLockTest {
 
         @Test
         fun `lock throws exception`() {
-            every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException()
+            every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException("test exception")
 
             val redLock = RedLock(listOf(backend))
             val permit = redLock.lock("test")
@@ -76,7 +76,7 @@ class RedLockTest {
 
         @Test
         fun `lock throws cancellation exception`() {
-            every { backend.setLock(eq("test"), any(), any()) } throws CancellationException()
+            every { backend.setLock(eq("test"), any(), any()) } throws CancellationException("test exception")
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
@@ -90,7 +90,7 @@ class RedLockTest {
 
         @Test
         fun `unlock throws exception`() {
-            every { backend.removeLock(eq("test"), any()) } throws RuntimeException()
+            every { backend.removeLock(eq("test"), any()) } throws RuntimeException("test exception")
 
             val redLock = RedLock(listOf(backend))
             redLock.unlock("test")
@@ -101,7 +101,7 @@ class RedLockTest {
 
         @Test
         fun `unlock throws cancellation exception`() {
-            every { backend.removeLock(eq("test"), any()) } throws CancellationException()
+            every { backend.removeLock(eq("test"), any()) } throws CancellationException("test exception")
 
             val redLock = RedLock(listOf(backend))
             redLock.unlock("test")

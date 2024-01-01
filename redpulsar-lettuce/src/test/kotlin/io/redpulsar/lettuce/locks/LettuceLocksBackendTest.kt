@@ -67,7 +67,11 @@ class LettuceLocksBackendTest {
         fun `set lock failed`() {
             val clientId = "uuid"
             every {
-                sync.set(eq("test"), eq(clientId), eq(SetArgs().nx().px(10.seconds.inWholeMilliseconds)))
+                sync.set(
+                    eq("test"),
+                    eq(clientId),
+                    match { it.equalsTo(SetArgs().nx().px(10.seconds.inWholeMilliseconds)) },
+                )
             } returns null
             val permit = backend.setLock("test", clientId, 10.seconds)
 
@@ -78,8 +82,12 @@ class LettuceLocksBackendTest {
         fun `set lock throws exception`() {
             val clientId = "uuid"
             every {
-                sync.set(eq("test"), eq(clientId), eq(SetArgs().nx().px(200.milliseconds.inWholeMilliseconds)))
-            } throws IOException()
+                sync.set(
+                    eq("test"),
+                    eq(clientId),
+                    match { it.equalsTo(SetArgs().nx().px(200.milliseconds.inWholeMilliseconds)) },
+                )
+            } throws IOException("test exception")
             val permit = backend.setLock("test", clientId, 200.milliseconds)
 
             assertNull(permit)
@@ -92,13 +100,13 @@ class LettuceLocksBackendTest {
         fun `remove lock successful`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.VALUE), eq(arrayOf("test")), eq(clientId))
+                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             } returns "OK"
             val permit = backend.removeLock("test", clientId)
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.VALUE), eq(arrayOf("test")), eq(clientId))
+                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             }
             verify(exactly = 0) {
                 sync.set(any<String>(), any(), any())
@@ -109,7 +117,7 @@ class LettuceLocksBackendTest {
         fun `remove lock failed`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.VALUE), eq(arrayOf("test")), eq(clientId))
+                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             } returns null
             val permit = backend.removeLock("test", clientId)
 
@@ -120,8 +128,8 @@ class LettuceLocksBackendTest {
         fun `remove lock throws exception`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.VALUE), eq(arrayOf("test")), eq(clientId))
-            } throws IOException()
+                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
+            } throws IOException("test exception")
             val permit = backend.removeLock("test", clientId)
 
             assertNull(permit)
@@ -198,7 +206,7 @@ class LettuceLocksBackendTest {
                     eq("10"),
                     eq("100"),
                 )
-            } throws IOException()
+            } throws IOException("test exception")
             val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 10, 100.milliseconds)
 
             assertNull(permit)
@@ -235,7 +243,7 @@ class LettuceLocksBackendTest {
         fun `remove semaphore lock failed`() {
             val clientId = "uuid"
             every { sync.srem(eq("test-key1"), eq(clientId)) } returns 1
-            every { sync.del(eq("test-key2")) } throws IOException()
+            every { sync.del(eq("test-key2")) } throws IOException("test exception")
             val permit = backend.removeSemaphoreLock("test-key1", "test-key2", clientId)
 
             assertNull(permit)
@@ -253,7 +261,7 @@ class LettuceLocksBackendTest {
             every {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
@@ -264,7 +272,7 @@ class LettuceLocksBackendTest {
             verify(exactly = 1) {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
@@ -276,7 +284,7 @@ class LettuceLocksBackendTest {
             every {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
@@ -287,7 +295,7 @@ class LettuceLocksBackendTest {
             verify(exactly = 1) {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
@@ -299,18 +307,18 @@ class LettuceLocksBackendTest {
             every {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
-            } throws IOException()
+            } throws IOException("test exception")
             val permit = backend.cleanUpExpiredSemaphoreLocks("test-key", "test-key-prefix")
 
             assertNull(permit)
             verify(exactly = 1) {
                 sync.eval<String>(
                     any<String>(),
-                    eq(ScriptOutputType.VALUE),
+                    eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
                     eq("test-key-prefix"),
                 )
