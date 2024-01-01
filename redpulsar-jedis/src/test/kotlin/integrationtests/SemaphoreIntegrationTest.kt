@@ -3,7 +3,7 @@ package integrationtests
 import TestTags
 import getInstances
 import io.redpulsar.core.locks.Semaphore
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.jedis.locks.JedisLocksBackend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking

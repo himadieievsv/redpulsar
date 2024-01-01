@@ -1,7 +1,7 @@
 package io.redpulsar.core.locks
 
 import io.redpulsar.core.locks.abstracts.AbstractLock
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration

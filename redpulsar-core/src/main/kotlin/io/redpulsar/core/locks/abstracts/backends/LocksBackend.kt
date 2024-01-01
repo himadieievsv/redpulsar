@@ -1,11 +1,12 @@
-package io.redpulsar.core.locks.abstracts
+package io.redpulsar.core.locks.abstracts.backends
 
+import io.redpulsar.core.locks.abstracts.Backend
 import kotlin.time.Duration
 
 /**
  * An abstraction for underlying storage for distributed locks.
  */
-abstract class LocksBackend {
+abstract class LocksBackend : Backend() {
     abstract fun setLock(
         resourceName: String,
         clientId: String,
@@ -35,11 +36,4 @@ abstract class LocksBackend {
         leasersKey: String,
         leaserValidityKeyPrefix: String,
     ): String?
-
-    protected fun convertToString(result: Any?): String? =
-        when (result) {
-            is String -> result
-            is Any -> result.toString()
-            else -> (null)
-        }
 }

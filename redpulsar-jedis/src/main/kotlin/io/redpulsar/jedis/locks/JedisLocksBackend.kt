@@ -1,6 +1,6 @@
 package io.redpulsar.jedis.locks
 
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.core.utils.failsafe
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams

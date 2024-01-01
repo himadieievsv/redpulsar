@@ -3,7 +3,7 @@ package integrationtests
 import TestTags
 import getInstances
 import io.redpulsar.core.locks.RedLock
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.lettuce.LettucePooled
 import io.redpulsar.lettuce.locks.LettuceLocksBackend
 import kotlinx.coroutines.delay

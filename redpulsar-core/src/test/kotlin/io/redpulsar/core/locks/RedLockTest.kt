@@ -4,7 +4,7 @@ import TestTags
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking

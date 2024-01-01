@@ -1,5 +1,6 @@
 package io.redpulsar.core.locks.abstracts
 
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.core.locks.api.Lock
 import mu.KotlinLogging
 import java.util.UUID
