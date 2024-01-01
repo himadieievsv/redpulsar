@@ -22,15 +22,11 @@ abstract class CountDownLatchBackend : Backend() {
         count: Int,
     ): String?
 
-    abstract fun checkCount(
-        latchKeyName: String,
-        clientId: String,
-        count: Int,
-    ): Int?
+    abstract fun checkCount(latchKeyName: String): Int?
 
     /** Receive notification about count down latch is opened now. This is supposed to be a blocking call*/
     abstract fun <T> listen(
-        latchKeyName: String,
+        channelName: String,
         messageConsumer: (message: String) -> T,
     ): T?
 }

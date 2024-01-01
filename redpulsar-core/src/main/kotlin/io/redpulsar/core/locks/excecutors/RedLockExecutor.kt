@@ -47,7 +47,7 @@ internal inline fun <T : Backend, R> redLockExecute(
             runBlocking { waiter(jobs, results) }
         }
     val validity = releaseTime.inWholeMilliseconds - timeDiff - clockDrift
-    if (results.size < quorum && validity < 0) {
+    if (results.size < quorum || validity < 0) {
         return emptyList()
     }
     return results
@@ -58,11 +58,12 @@ internal inline fun <T : Backend, R> redLockExecuteWithRetry(
     scope: CoroutineScope,
     releaseTime: Duration,
     defaultDrift: Duration = 3.milliseconds,
-    maxRetries: Int = 3,
+    retryCount: Int = 3,
+    retryDelay: Duration = 100.milliseconds,
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = { jobs, _ -> jobs.joinAll() },
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
-    return withRetry(maxRetries = maxRetries) {
+    return withRetry(retryCount = retryCount, retryDelay = retryDelay) {
         return@withRetry redLockExecute(
             backends = backends,
             scope = scope,
@@ -71,14 +72,15 @@ internal inline fun <T : Backend, R> redLockExecuteWithRetry(
             waiter = waiter,
             callee = callee,
         )
-    } ?: emptyList()
+    }
 }
 
 internal fun <T : Backend, R> List<T>.executeWithRetry(
     scope: CoroutineScope,
-    maxRetries: Int = 3,
     releaseTime: Duration,
     defaultDrift: Duration = 3.milliseconds,
+    retryCount: Int = 3,
+    retryDelay: Duration = 100.milliseconds,
     waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = { jobs, _ -> jobs.joinAll() },
     callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -87,7 +89,8 @@ internal fun <T : Backend, R> List<T>.executeWithRetry(
         scope = scope,
         releaseTime = releaseTime,
         defaultDrift = defaultDrift,
-        maxRetries = maxRetries,
+        retryCount = retryCount,
+        retryDelay = retryDelay,
         waiter = waiter,
         callee = callee,
     )

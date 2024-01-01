@@ -19,6 +19,8 @@ class ListeningCountDownLatch(
     private val count: Int,
     private val backends: List<CountDownLatchBackend>,
     private val maxDuration: Duration = 5.minutes,
+    private val retryCount: Int = 3,
+    private val retryDelay: Duration = 101.milliseconds,
 ) : CountDownLatch {
     private val scope: CoroutineScope = CoroutineScope(CoroutineName("listeningCountDownLatch") + Dispatchers.IO)
     private val clientId: String = UUID.randomUUID().toString()
@@ -32,13 +34,20 @@ class ListeningCountDownLatch(
         require(count > 0) { "Count must be positive" }
         require(name.isNotBlank()) { "Name must not be blank" }
         require(maxDuration > 100.milliseconds) { "Max duration must be greater that 0.1 second" }
+        require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
+        require(retryCount > 0) { "Retry count must be positive" }
     }
 
     override fun countDown(): CallResult {
         // Skip if internal counter is already 0
         if (currentCounter.get() <= 0) return CallResult.SUCCESS
         val result =
-            backends.executeWithRetry(scope = scope, releaseTime = maxDuration) { backend ->
+            backends.executeWithRetry(
+                scope = scope,
+                releaseTime = maxDuration,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+            ) { backend ->
                 backend.count(
                     latchKeyName = buildKey(name),
                     channelName = buildKey(channelSpace, name),
@@ -49,7 +58,12 @@ class ListeningCountDownLatch(
                 )
             }
         return if (result.isEmpty()) {
-            backends.executeWithRetry(scope = scope, releaseTime = maxDuration) { backend ->
+            backends.executeWithRetry(
+                scope = scope,
+                releaseTime = maxDuration,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+            ) { backend ->
                 backend.undoCount(
                     latchKeyName = buildKey(name),
                     clientId = clientId,
@@ -69,11 +83,15 @@ class ListeningCountDownLatch(
 
     override fun await(timeout: Duration): CallResult {
         // Open latch if internal counter or global one is already 0 or less
-        if (currentCounter.get() <= 0 || getCount() <= 0) return CallResult.SUCCESS
+        val globalCount = getCount()
+        if (globalCount == Int.MIN_VALUE) return CallResult.FAILED
+        if (currentCounter.get() <= 0 || globalCount <= 0) return CallResult.SUCCESS
         val result =
             backends.executeWithRetry(
                 scope = scope,
                 releaseTime = timeout,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
                 waiter = { jobs, results ->
                     select { jobs.forEach { job -> job.onJoin { } } }
                     jobs.forEach { job -> job.cancel() }
@@ -84,7 +102,7 @@ class ListeningCountDownLatch(
                 },
             ) { backend ->
                 backend.listen(
-                    latchKeyName = buildKey(channelSpace, name),
+                    channelName = buildKey(channelSpace, name),
                     messageConsumer = { message ->
                         if (message == openLatchMessage) {
                             "OK"
@@ -107,17 +125,22 @@ class ListeningCountDownLatch(
      */
     override fun getCount(): Int {
         val result =
-            backends.executeWithRetry(scope = scope, releaseTime = maxDuration * 2) { backend ->
-                backend.undoCount(
-                    latchKeyName = buildKey(name),
-                    clientId = clientId,
-                    count = currentCounter.get(),
-                )
+            backends.executeWithRetry(
+                scope = scope,
+                releaseTime = maxDuration * 2,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+            ) { backend ->
+                backend.checkCount(latchKeyName = buildKey(name))
             }
-        return result.map { it?.toInt() ?: Int.MIN_VALUE }
-            .groupBy { it }
-            .mapValues { it.value.size }
-            .maxBy { it.value }.key
+        return if (result.isEmpty()) {
+            Int.MIN_VALUE
+        } else {
+            result.map { it }
+                .groupBy { it }
+                .mapValues { it.value.size }
+                .maxBy { it.value }.key ?: Int.MIN_VALUE
+        }
     }
 
     @Suppress("NOTHING_TO_INLINE")
