@@ -28,11 +28,11 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
             if redis.call("get", KEYS[1]) == ARGV[1] then
                 return redis.call("del", KEYS[1])
             end
-            return nil
+            return 0
             """.trimIndent()
         return failsafe(null) {
             convertToString(
-                redis.sync { sync -> sync.eval(luaScript, ScriptOutputType.VALUE, arrayOf(resourceName), clientId) },
+                redis.sync { sync -> sync.eval(luaScript, ScriptOutputType.INTEGER, arrayOf(resourceName), clientId) },
             )
         }
     }
@@ -99,13 +99,14 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
                     redis.call("srem", leasersKey, leaser)
                 end
             end
+            return "OK"
             """.trimIndent()
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->
                     sync.eval(
                         luaScript,
-                        ScriptOutputType.VALUE,
+                        ScriptOutputType.STATUS,
                         arrayOf(leasersKey),
                         leaserValidityKeyPrefix,
                     )
