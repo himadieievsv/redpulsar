@@ -286,7 +286,6 @@ class SemaphoreTest {
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate ttl`(ttl: Int) {
-            // every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns "OK"
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),

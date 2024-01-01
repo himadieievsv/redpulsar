@@ -85,7 +85,7 @@ class JedisLocksBackendTest {
                         it.equalsTo(SetParams().nx().px(200.milliseconds.inWholeMilliseconds))
                     },
                 )
-            } throws IOException()
+            } throws IOException("test exception")
             val permit = lock.setLock("test", clientId, 200.milliseconds)
 
             assertNull(permit)
@@ -121,7 +121,7 @@ class JedisLocksBackendTest {
         @Test
         fun `remove lock throws exception`() {
             val clientId = "uuid"
-            every { redis.eval(any(), eq(listOf("test")), eq(listOf(clientId))) } throws IOException()
+            every { redis.eval(any(), eq(listOf("test")), eq(listOf(clientId))) } throws IOException("test exception")
             val permit = lock.removeLock("test", clientId)
 
             assertNull(permit)
@@ -163,7 +163,7 @@ class JedisLocksBackendTest {
             val clientId = "uuid"
             every {
                 redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
-            } throws IOException()
+            } throws IOException("test exception")
             val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 10, 100.milliseconds)
 
             assertNull(permit)
@@ -202,7 +202,8 @@ class JedisLocksBackendTest {
             every { redis.pipelined() } returns pipelined
             every { pipelined.srem(any<String>(), any()) } returns mockk()
             every { pipelined.del(any<String>()) } returns mockk()
-            every { pipelined.sync() } throws IOException()
+            every { pipelined.sync() } throws IOException("test exception")
+            every { pipelined.close() } returns Unit
             val permit = lock.removeSemaphoreLock("test-key1", "test-key2", clientId)
 
             assertNull(permit)
@@ -241,7 +242,13 @@ class JedisLocksBackendTest {
 
         @Test
         fun `clean up semaphore locks throws exception`() {
-            every { redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix"))) } throws IOException()
+            every {
+                redis.eval(
+                    any(),
+                    eq(listOf("test-key")),
+                    eq(listOf("test-key-prefix")),
+                )
+            } throws IOException("test exception")
             val permit = lock.cleanUpExpiredSemaphoreLocks("test-key", "test-key-prefix")
 
             assertNull(permit)
