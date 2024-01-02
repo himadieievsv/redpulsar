@@ -5,9 +5,12 @@ import io.redpulsar.core.locks.api.CallResult
 import io.redpulsar.core.locks.api.CountDownLatch
 import io.redpulsar.core.locks.excecutors.executeWithRetry
 import io.redpulsar.core.locks.excecutors.waitAnyJobs
+import io.redpulsar.core.utils.failsafe
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import mu.KotlinLogging
@@ -30,7 +33,6 @@ class ListeningCountDownLatch(
     private val clientId: String = UUID.randomUUID().toString()
     private val keySpace = "countdownlatch"
     private val channelSpace = "channels"
-    private val openLatchMessage = "open"
     private val currentCounter = AtomicInteger(count)
     private val minimalMaxDuration = 100.milliseconds
 
@@ -62,26 +64,33 @@ class ListeningCountDownLatch(
 
     override fun await(timeout: Duration): CallResult {
         require(timeout > minimalMaxDuration) { "Timeout must be greater that [minimalMaxDuration]" }
-        return runBlocking(scope.coroutineContext) {
-            val logger = KotlinLogging.logger {}
-            try {
-                withTimeout(timeout.inWholeMilliseconds) {
-                    val globalCount = getCount(this)
-                    if (globalCount == Int.MIN_VALUE) return@withTimeout CallResult.FAILED
-                    // Open latch if internal counter or global one is already 0 or less
-                    if (currentCounter.get() <= 0 || globalCount <= 0) return@withTimeout CallResult.SUCCESS
-                    val result = listen(timeout, this)
-                    return@withTimeout if (result.isEmpty()) {
-                        CallResult.FAILED
-                    } else {
-                        CallResult.SUCCESS
+        val job =
+            scope.async {
+                val logger = KotlinLogging.logger {}
+                try {
+                    withTimeout(timeout.inWholeMilliseconds) {
+                        val globalCount = getCount(this)
+                        if (globalCount == Int.MIN_VALUE) return@withTimeout CallResult.FAILED
+                        // Open latch if internal counter or global one is already 0 or less
+                        if (currentCounter.get() <= 0 || globalCount <= 0) return@withTimeout CallResult.SUCCESS
+                        val result = listen(timeout, this)
+                        return@withTimeout if (result.isEmpty()) {
+                            CallResult.FAILED
+                        } else {
+                            CallResult.SUCCESS
+                        }
                     }
+                } catch (e: CancellationException) {
+                    logger.info { "Job associated with await() was canceled." }
+                    CallResult.FAILED
                 }
-            } catch (e: CancellationException) {
-                logger.info { "Job associated with await() was canceled." }
-                CallResult.FAILED
             }
+        var callResult: CallResult
+        runBlocking {
+            callResult = job.await()
         }
+        job.cancel()
+        return callResult
     }
 
     /**
@@ -97,10 +106,16 @@ class ListeningCountDownLatch(
         return if (result.isEmpty()) {
             Int.MIN_VALUE
         } else {
-            result.map { it }
-                .groupBy { it }
-                .mapValues { it.value.size }
-                .maxBy { it.value }.key ?: Int.MIN_VALUE
+            val maxValue =
+                result.map { it }
+                    .groupBy { it }
+                    .mapValues { it.value.size }
+                    .maxBy { it.value }.key?.toInt()
+            if (maxValue != null) {
+                count - maxValue
+            } else {
+                Int.MIN_VALUE
+            }
         }
     }
 
@@ -137,7 +152,7 @@ class ListeningCountDownLatch(
         }
     }
 
-    private fun checkCount(scope: CoroutineScope): List<Int?> {
+    private fun checkCount(scope: CoroutineScope): List<Long?> {
         return backends.executeWithRetry(
             scope = scope,
             releaseTime = maxDuration * 2,
@@ -148,7 +163,7 @@ class ListeningCountDownLatch(
         }
     }
 
-    private fun listen(
+    private suspend fun listen(
         timeout: Duration,
         scope: CoroutineScope,
     ): List<String?> {
@@ -157,18 +172,14 @@ class ListeningCountDownLatch(
             releaseTime = timeout,
             retryCount = retryCount,
             retryDelay = retryDelay,
+            // Allow non-quorum polling here. That might need to be changed as it could lead to unexpected behavior
+            // if multiple instances goes down or encounter network issue.
             waiter = ::waitAnyJobs,
         ) { backend ->
-            backend.listen(
-                channelName = buildKey(channelSpace, name),
-                messageConsumer = { message ->
-                    if (message == openLatchMessage) {
-                        "OK"
-                    } else {
-                        null
-                    }
-                },
-            )
+            failsafe(null) {
+                val flow = backend.listen(channelName = buildKey(channelSpace, name))
+                flow.first()
+            }
         }
     }
 

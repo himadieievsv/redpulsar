@@ -1,8 +1,8 @@
 package io.redpulsar.core.locks.excecutors
 
 import io.redpulsar.core.locks.abstracts.Backend
-import io.redpulsar.core.utils.ensureTimeout
 import io.redpulsar.core.utils.withRetry
+import io.redpulsar.core.utils.withTimeoutInThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -15,9 +15,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Coroutine this executor is non-cooperative by intention.
- * This aims to supress any cancellation exception from jobs. This is matter to change.
- * In order to cancel jobs forcefully, use [ensureTimeout] instead.
+ * Coroutine used buy callee must be cooperative coroutine (not blocking).
+ * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
  */
 inline fun <T : Backend, R> multyInstanceExecute(
     backends: List<T>,

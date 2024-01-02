@@ -1,5 +1,7 @@
 package io.redpulsar.core.locks
 
+import TestTags
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -8,7 +10,8 @@ import io.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import io.redpulsar.core.locks.api.CallResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.io.IOException
 import java.util.concurrent.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -48,7 +52,7 @@ class ListeningCountDownLatchTest {
         @Test
         fun `count down failing`() {
             backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, null)
-            backend.everyUndoCount("countdownlatch:test", 2, "OK")
+            backend.everyUndoCount("countdownlatch:test", 2, 1)
             val latch =
                 ListeningCountDownLatch(
                     "test",
@@ -85,15 +89,31 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun await() {
-            backend.everyListen("countdownlatch:channels:test", "open")
+            val flow = flow { emit("open") }
+            backend.everyListen(flow)
+            backend.everyCheckCount("countdownlatch:test", 2)
+            val latch = ListeningCountDownLatch("test", 4, listOf(backend), maxDuration = 10.seconds)
+
+            assertEquals(CallResult.SUCCESS, latch.await())
+
+            verify(exactly = 1) {
+                backend.listen(any())
+                backend.checkCount(any())
+            }
+        }
+
+        @Test
+        fun `await finished by global count`() {
             backend.everyCheckCount("countdownlatch:test", 4)
             val latch = ListeningCountDownLatch("test", 4, listOf(backend), maxDuration = 10.seconds)
 
             assertEquals(CallResult.SUCCESS, latch.await())
 
             verify(exactly = 1) {
-                backend.listen(any(), any<((String) -> String)>())
                 backend.checkCount(any())
+            }
+            verify(exactly = 0) {
+                backend.listen(any())
             }
         }
 
@@ -113,7 +133,7 @@ class ListeningCountDownLatchTest {
             assertEquals(CallResult.FAILED, latch.await())
 
             verify(exactly = 2) { backend.checkCount(any()) }
-            verify(exactly = 0) { backend.listen(any(), any<((String) -> String)>()) }
+            verify(exactly = 0) { backend.listen(any()) }
         }
 
         @Test
@@ -127,32 +147,34 @@ class ListeningCountDownLatchTest {
             assertEquals(CallResult.FAILED, latch.await())
             verify(exactly = 0) {
                 backend.checkCount(any())
-                backend.listen(any(), any<((String) -> String)>())
+                backend.listen(any())
             }
         }
 
         @Test
         fun `await timed out`() {
-            every {
-                backend.listen(eq("countdownlatch:channels:test"), any<((String) -> String)>())
-            } answers {
-                runBlocking { delay(1000) }
-                "OK"
-            }
-            backend.everyCheckCount("countdownlatch:test", 4)
+            coEvery {
+                backend.listen(eq("countdownlatch:channels:test"))
+            } returns
+                flow {
+                    delay(1000)
+                }
+
+            backend.everyCheckCount("countdownlatch:test", 2)
             val latch = ListeningCountDownLatch("test", 4, listOf(backend))
 
             assertEquals(CallResult.FAILED, latch.await(110.milliseconds))
             verify(exactly = 1) {
                 backend.checkCount(any())
-                backend.listen(any(), any<((String) -> String)>())
+                backend.listen(any())
             }
         }
 
         @Test
         fun `await failed`() {
-            backend.everyListen("countdownlatch:channels:test", null)
-            backend.everyCheckCount("countdownlatch:test", 4)
+            val flow = flow<String> { IOException("test exception") }
+            backend.everyListen(flow)
+            backend.everyCheckCount("countdownlatch:test", 3)
             val latch =
                 ListeningCountDownLatch(
                     "test",
@@ -166,15 +188,29 @@ class ListeningCountDownLatchTest {
             assertEquals(CallResult.FAILED, latch.await())
 
             verify(exactly = 1) { backend.checkCount(any()) }
-            verify(exactly = 5) { backend.listen(any(), any<((String) -> String)>()) }
+            verify(exactly = 5) { backend.listen(any()) }
         }
 
         @Test
-        fun `check count`() {
-            backend.everyCheckCount("countdownlatch:test", 4)
-            val latch = ListeningCountDownLatch("test", 4, listOf(backend))
+        fun `await in flow throws cancellation exception`() {
+            val flow = flow<String> { CancellationException("test exception") }
+            backend.everyListen(flow)
+            backend.everyCheckCount("countdownlatch:test", 2)
+            val latch = ListeningCountDownLatch("test", 4, listOf(backend), retryDelay = 1.milliseconds)
 
-            assertEquals(4, latch.getCount())
+            assertEquals(CallResult.FAILED, latch.await())
+
+            verify(exactly = 1) { backend.checkCount(any()) }
+            verify(exactly = 3) { backend.listen(any()) }
+        }
+
+        @ParameterizedTest(name = "current count: {0}")
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5])
+        fun `check count`(count: Long) {
+            backend.everyCheckCount("countdownlatch:test", count)
+            val latch = ListeningCountDownLatch("test", 5, listOf(backend))
+
+            assertEquals(5 - count.toInt(), latch.getCount())
 
             verify(exactly = 1) { backend.checkCount(any()) }
         }
@@ -310,7 +346,7 @@ class ListeningCountDownLatchTest {
             backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
             backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
             instances.forEach { backend ->
-                backend.everyUndoCount("countdownlatch:test", 4, "OK")
+                backend.everyUndoCount("countdownlatch:test", 4, 1)
             }
             val latch = ListeningCountDownLatch("test", 4, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.FAILED, latch.countDown())
@@ -323,66 +359,75 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `all instances are in quorum for await`() {
+            val flow = flow { emit("open") }
             instances.forEach { backend ->
-                backend.everyListen("countdownlatch:channels:test", "open")
-                backend.everyCheckCount("countdownlatch:test", 2)
+                backend.everyListen(flow)
+                backend.everyCheckCount("countdownlatch:test", 1)
             }
             val latch = ListeningCountDownLatch("test", 2, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.SUCCESS, latch.await())
 
             verify(exactly = 1) {
-                instances.forEach { backend -> backend.listen(any(), any<((String) -> String)>()) }
+                instances.forEach { backend -> backend.listen(any()) }
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
 
         @Test
         fun `two instances are in quorum for await`() {
+            val flow =
+                flow<String> {
+                    delay(50)
+                    IOException("test exception 2")
+                }
+            val okFlow = flow { emit("open") }
             instances.forEach { backend ->
-                backend.everyCheckCount("countdownlatch:test", 2)
+                backend.everyCheckCount("countdownlatch:test", 1)
             }
-            backend1.everyListen("countdownlatch:channels:test", "open")
-            backend2.everyListen("countdownlatch:channels:test", "open")
-            backend3.everyListen("countdownlatch:channels:test", null)
-            val latch = ListeningCountDownLatch("test", 2, backends = instances, retryDelay = 1.milliseconds)
+            backend1.everyListen(okFlow)
+            backend2.everyListen(flow)
+            backend3.everyListen(okFlow)
+            val latch =
+                ListeningCountDownLatch("test", 5, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.SUCCESS, latch.await())
 
             verify(exactly = 1) {
-                instances.forEach { backend -> backend.listen(any(), any<((String) -> String)>()) }
+                instances.forEach { backend -> backend.listen(any()) }
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
 
         @Test
-        fun `quorum wasn't reach by await succeed`() {
+        fun `quorum wasn't reach but await succeed`() {
+            val flow = flow<String> { IOException("test exception") }
+            val okFlow = flow { emit("open") }
             instances.forEach { backend ->
-                backend.everyCheckCount("countdownlatch:test", 2)
+                backend.everyCheckCount("countdownlatch:test", 1)
             }
-            backend1.everyListen("countdownlatch:channels:test", null)
-            backend2.everyListen("countdownlatch:channels:test", "open")
-            backend3.everyListen("countdownlatch:channels:test", null)
-            val latch = ListeningCountDownLatch("test", 2, backends = instances, retryDelay = 1.milliseconds)
+            backend1.everyListen(flow)
+            backend2.everyListen(okFlow)
+            backend3.everyListen(flow)
+            val latch = ListeningCountDownLatch("test", 3, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.SUCCESS, latch.await())
 
             verify(exactly = 1) {
-                instances.forEach { backend -> backend.listen(any(), any<((String) -> String)>()) }
+                instances.forEach { backend -> backend.listen(any()) }
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
 
         @Test
         fun `all instances are down`() {
+            val flow = flow<String> { IOException("test exception") }
             instances.forEach { backend ->
-                backend.everyCheckCount("countdownlatch:test", 2)
+                backend.everyCheckCount("countdownlatch:test", 1)
+                backend1.everyListen(flow)
             }
-            backend1.everyListen("countdownlatch:channels:test", null)
-            backend2.everyListen("countdownlatch:channels:test", null)
-            backend3.everyListen("countdownlatch:channels:test", null)
             val latch = ListeningCountDownLatch("test", 2, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.FAILED, latch.await())
 
             verify(exactly = 3) {
-                instances.forEach { backend -> backend.listen(any(), any<((String) -> String)>()) }
+                instances.forEach { backend -> backend.listen(any()) }
             }
             verify(exactly = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
@@ -439,7 +484,7 @@ class ListeningCountDownLatchTest {
     private fun CountDownLatchBackend.everyUndoCount(
         latchKeyName: String,
         count: Int,
-        returnVal: String?,
+        returnVal: Long?,
     ) {
         val backend = this
         every {
@@ -452,23 +497,16 @@ class ListeningCountDownLatchTest {
         } returns returnVal
     }
 
-    private fun CountDownLatchBackend.everyListen(
-        channelName: String,
-        returnVal: String?,
-    ) {
+    private fun CountDownLatchBackend.everyListen(returnVal: Flow<String>) {
         val backend = this
-        every {
-            backend.listen(
-                eq(channelName),
-                // Message consumer
-                any<((String) -> String)>(),
-            )
+        coEvery {
+            backend.listen(eq("countdownlatch:channels:test"))
         } returns returnVal
     }
 
     private fun CountDownLatchBackend.everyCheckCount(
         latchKeyName: String,
-        returnVal: Int?,
+        returnVal: Long?,
     ) {
         val backend = this
         every {

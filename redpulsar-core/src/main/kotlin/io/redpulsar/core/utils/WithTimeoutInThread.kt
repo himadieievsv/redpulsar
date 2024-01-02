@@ -2,7 +2,7 @@ package io.redpulsar.core.utils
 
 import mu.KotlinLogging
 
-fun <T> ensureTimeout(
+inline fun <T> withTimeoutInThread(
     timeoutMillis: Long,
     block: () -> T,
 ): T? {

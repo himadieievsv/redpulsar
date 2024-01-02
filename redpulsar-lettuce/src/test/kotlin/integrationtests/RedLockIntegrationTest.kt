@@ -1,7 +1,7 @@
 package integrationtests
 
 import TestTags
-import getInstances
+import getPooledInstances
 import io.redpulsar.core.locks.RedLock
 import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.lettuce.LettucePooled
@@ -24,7 +24,7 @@ class RedLockIntegrationTest {
 
     @BeforeEach
     fun setUp() {
-        instances = getInstances()
+        instances = getPooledInstances()
         instances.forEach { lettuce -> lettuce.sync { redis -> redis.flushall() } }
         backends = instances.map { LettuceLocksBackend(it) }
     }

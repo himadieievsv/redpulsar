@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.system.measureTimeMillis
 
-class EnsureTimeoutTest {
+class WithTimeoutInThreadTest {
     private val logger = KotlinLogging.logger {}
 
     // Acceptable clock error
@@ -18,7 +18,7 @@ class EnsureTimeoutTest {
         val timeDiff =
             measureTimeMillis {
                 val result =
-                    ensureTimeout(1000) {
+                    withTimeoutInThread(1000) {
                         Thread.sleep(100)
                         "OK"
                     }
@@ -34,7 +34,7 @@ class EnsureTimeoutTest {
         val timeDiff =
             measureTimeMillis {
                 val result =
-                    ensureTimeout(100) {
+                    withTimeoutInThread(100) {
                         Thread.sleep(1000)
                         "OK"
                     }
