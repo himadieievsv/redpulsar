@@ -2,20 +2,27 @@ package io.redpulsar.core.locks
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.verify
 import io.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import io.redpulsar.core.locks.api.CallResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.concurrent.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class ListeningCountDownLatchTest {
     @Nested
     inner class SingleRedisInstance {
@@ -107,6 +114,39 @@ class ListeningCountDownLatchTest {
 
             verify(exactly = 2) { backend.checkCount(any()) }
             verify(exactly = 0) { backend.listen(any(), any<((String) -> String)>()) }
+        }
+
+        @Test
+        fun `await canceled`() {
+            val latch = ListeningCountDownLatch("test", 4, listOf(backend))
+            mockkObject(latch)
+            every {
+                latch invoke "getCount" withArguments listOf(any<CoroutineScope>())
+            } throws CancellationException("test exception")
+
+            assertEquals(CallResult.FAILED, latch.await())
+            verify(exactly = 0) {
+                backend.checkCount(any())
+                backend.listen(any(), any<((String) -> String)>())
+            }
+        }
+
+        @Test
+        fun `await timed out`() {
+            every {
+                backend.listen(eq("countdownlatch:channels:test"), any<((String) -> String)>())
+            } answers {
+                runBlocking { delay(1000) }
+                "OK"
+            }
+            backend.everyCheckCount("countdownlatch:test", 4)
+            val latch = ListeningCountDownLatch("test", 4, listOf(backend))
+
+            assertEquals(CallResult.FAILED, latch.await(110.milliseconds))
+            verify(exactly = 1) {
+                backend.checkCount(any())
+                backend.listen(any(), any<((String) -> String)>())
+            }
         }
 
         @Test
