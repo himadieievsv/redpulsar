@@ -3,7 +3,7 @@ package io.redpulsar.core.locks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -251,17 +251,17 @@ class SemaphoreTest {
             }
         }
 
-        @ParameterizedTest(name = "Validated with retry delly - {0}")
+        @ParameterizedTest(name = "Validated with retry delay - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate retry delly`(retryDelly: Int) {
-            if (retryDelly > 0) {
-                Assertions.assertDoesNotThrow { Semaphore(listOf(backend), 3, retryDelay = retryDelly.milliseconds) }
+        fun `validate retry delay`(retryDelay: Int) {
+            if (retryDelay > 0) {
+                Assertions.assertDoesNotThrow { Semaphore(listOf(backend), 3, retryDelay = retryDelay.milliseconds) }
             } else {
                 assertThrows<IllegalArgumentException> {
                     Semaphore(
                         listOf(backend),
                         3,
-                        retryDelay = retryDelly.milliseconds,
+                        retryDelay = retryDelay.milliseconds,
                     )
                 }
             }

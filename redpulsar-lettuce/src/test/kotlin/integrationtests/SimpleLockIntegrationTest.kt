@@ -1,9 +1,9 @@
 package integrationtests
 
 import TestTags
-import getInstances
+import getPooledInstances
 import io.redpulsar.core.locks.SimpleLock
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.lettuce.LettucePooled
 import io.redpulsar.lettuce.locks.LettuceLocksBackend
 import kotlinx.coroutines.delay
@@ -25,7 +25,7 @@ class SimpleLockIntegrationTest {
 
     @BeforeEach
     fun setUp() {
-        redis = getInstances()[0]
+        redis = getPooledInstances()[0]
         redis.sync { redis -> redis.flushall() }
         backend = LettuceLocksBackend(redis)
     }

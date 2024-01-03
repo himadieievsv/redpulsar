@@ -2,7 +2,7 @@ package io.redpulsar.lettuce.locks
 
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.redpulsar.core.utils.failsafe
 import io.redpulsar.lettuce.LettucePooled
 import kotlin.time.Duration

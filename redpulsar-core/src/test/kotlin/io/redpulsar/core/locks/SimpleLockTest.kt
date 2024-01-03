@@ -4,7 +4,7 @@ import TestTags
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -78,13 +78,13 @@ class SimpleLockTest {
         }
     }
 
-    @ParameterizedTest(name = "Validated with retry delly - {0}")
+    @ParameterizedTest(name = "Validated with retry delay - {0}")
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-    fun `validate retry delly`(retryDelly: Int) {
-        if (retryDelly > 0) {
-            assertDoesNotThrow { SimpleLock(backend, retryDelay = retryDelly.milliseconds) }
+    fun `validate retry delay`(retryDelay: Int) {
+        if (retryDelay > 0) {
+            assertDoesNotThrow { SimpleLock(backend, retryDelay = retryDelay.milliseconds) }
         } else {
-            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryDelay = retryDelly.milliseconds) }
+            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryDelay = retryDelay.milliseconds) }
         }
     }
 

@@ -1,7 +1,7 @@
 package io.redpulsar.core.locks
 
 import io.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
-import io.redpulsar.core.locks.abstracts.LocksBackend
+import io.redpulsar.core.locks.abstracts.backends.LocksBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.time.Duration

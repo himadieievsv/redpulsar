@@ -3,7 +3,9 @@ import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.codec.StringCodec
 import io.lettuce.core.protocol.CommandArgs
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.redpulsar.lettuce.LettucePooled
+import io.redpulsar.lettuce.LettucePubSubPooled
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import java.time.Duration
 
@@ -25,7 +27,24 @@ fun SetArgs.equalsTo(other: SetArgs): Boolean {
 }
 
 /** Integration tests instance initiations */
-fun getInstances(): List<LettucePooled<String, String>> {
+fun getInstances(): List<LettucePubSubPooled<String, String>> {
+    val poolConfig =
+        GenericObjectPoolConfig<StatefulRedisPubSubConnection<String, String>>().apply {
+            maxTotal = 8
+            maxIdle = 2
+            minIdle = 1
+            setMaxWait(Duration.ofMillis(100))
+            blockWhenExhausted = true
+        }
+
+    return listOf(
+        LettucePubSubPooled(poolConfig) { RedisClient.create(getHostPort(1)).connectPubSub() },
+        LettucePubSubPooled(poolConfig) { RedisClient.create(getHostPort(2)).connectPubSub() },
+        LettucePubSubPooled(poolConfig) { RedisClient.create(getHostPort(3)).connectPubSub() },
+    )
+}
+
+fun getPooledInstances(): List<LettucePooled<String, String>> {
     val poolConfig =
         GenericObjectPoolConfig<StatefulRedisConnection<String, String>>().apply {
             maxTotal = 8

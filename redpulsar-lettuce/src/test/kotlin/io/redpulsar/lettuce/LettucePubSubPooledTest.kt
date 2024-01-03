@@ -1,7 +1,7 @@
 package io.redpulsar.lettuce
 
-import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.sync.RedisCommands
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
+import io.lettuce.core.pubsub.api.sync.RedisPubSubCommands
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -14,16 +14,16 @@ import org.junit.jupiter.api.assertThrows
 import java.io.IOException
 
 @Tag(TestTags.UNIT)
-class LettucePooledTest {
-    private lateinit var connectionPool: GenericObjectPool<StatefulRedisConnection<String, String>>
-    private lateinit var lettucePooled: LettucePooled<String, String>
-    private lateinit var connection: StatefulRedisConnection<String, String>
+class LettucePubSubPooledTest {
+    private lateinit var connectionPool: GenericObjectPool<StatefulRedisPubSubConnection<String, String>>
+    private lateinit var lettucePubSubPooled: LettucePubSubPooled<String, String>
+    private lateinit var connection: StatefulRedisPubSubConnection<String, String>
 
     @BeforeEach
     fun setUp() {
-        connectionPool = mockk<GenericObjectPool<StatefulRedisConnection<String, String>>>()
-        lettucePooled = LettucePooled(connectionPool)
-        connection = mockk<StatefulRedisConnection<String, String>>()
+        connectionPool = mockk<GenericObjectPool<StatefulRedisPubSubConnection<String, String>>>()
+        lettucePubSubPooled = LettucePubSubPooled(connectionPool)
+        connection = mockk<StatefulRedisPubSubConnection<String, String>>()
         every { connection.isMulti } returns false
         every { connectionPool.borrowObject() } returns connection
         every { connectionPool.returnObject(eq(connection)) } returns Unit
@@ -32,7 +32,7 @@ class LettucePooledTest {
     @Test
     fun `sync calls success`() {
         every { connection.sync() } returns mockk()
-        lettucePooled.sync {}
+        lettucePubSubPooled.sync { }
 
         verify(exactly = 1) {
             connection.sync()
@@ -43,11 +43,11 @@ class LettucePooledTest {
 
     @Test
     fun `will close opened transaction`() {
-        val sync = mockk<RedisCommands<String, String>>()
+        val sync = mockk<RedisPubSubCommands<String, String>>()
         every { connection.isMulti } returns true
         every { connection.sync() } returns sync
         every { sync.discard() } returns "OK"
-        lettucePooled.sync {}
+        lettucePubSubPooled.sync {}
 
         verify(exactly = 1) {
             sync.discard()
@@ -60,7 +60,7 @@ class LettucePooledTest {
     @Test
     fun `async calls success`() {
         every { connection.async() } returns mockk()
-        lettucePooled.async {}
+        lettucePubSubPooled.async {}
 
         verify(exactly = 1) {
             connection.async()
@@ -72,7 +72,7 @@ class LettucePooledTest {
     @Test
     fun `reactive calls success`() {
         every { connection.reactive() } returns mockk()
-        lettucePooled.reactive {}
+        lettucePubSubPooled.reactive {}
 
         verify(exactly = 1) {
             connection.reactive()
@@ -85,7 +85,7 @@ class LettucePooledTest {
     fun `borrowObject throws exception`() {
         every { connectionPool.borrowObject() } throws IOException()
 
-        assertThrows<LettucePooledException> { lettucePooled.sync {} }
+        assertThrows<LettucePooledException> { lettucePubSubPooled.sync {} }
         verify(exactly = 1) { connectionPool.borrowObject() }
     }
 }
