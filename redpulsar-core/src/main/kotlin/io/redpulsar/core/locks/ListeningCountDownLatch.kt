@@ -13,7 +13,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import mu.KotlinLogging
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
@@ -66,31 +65,29 @@ class ListeningCountDownLatch(
         require(timeout > minimalMaxDuration) { "Timeout must be greater that [minimalMaxDuration]" }
         val job =
             scope.async {
-                val logger = KotlinLogging.logger {}
-                try {
-                    withTimeout(timeout.inWholeMilliseconds) {
-                        val globalCount = getCount(this)
-                        if (globalCount == Int.MIN_VALUE) return@withTimeout CallResult.FAILED
-                        // Open latch if internal counter or global one is already 0 or less
-                        if (currentCounter.get() <= 0 || globalCount <= 0) return@withTimeout CallResult.SUCCESS
-                        val result = listen(timeout, this)
-                        return@withTimeout if (result.isEmpty()) {
-                            CallResult.FAILED
-                        } else {
-                            CallResult.SUCCESS
-                        }
+                withTimeout(timeout.inWholeMilliseconds) {
+                    val globalCount = getCount(this)
+                    if (globalCount == Int.MIN_VALUE) return@withTimeout CallResult.FAILED
+                    // Open latch if internal counter or global one is already 0 or less
+                    if (currentCounter.get() <= 0 || globalCount <= 0) return@withTimeout CallResult.SUCCESS
+                    val result = listen(timeout, this)
+                    return@withTimeout if (result.isEmpty()) {
+                        CallResult.FAILED
+                    } else {
+                        CallResult.SUCCESS
                     }
-                } catch (e: CancellationException) {
-                    logger.info { "Job associated with await() was canceled." }
-                    CallResult.FAILED
                 }
             }
-        var callResult: CallResult
+        var result: CallResult
         runBlocking {
-            callResult = job.await()
+            result =
+                try {
+                    job.await()
+                } catch (e: CancellationException) {
+                    CallResult.FAILED
+                }
         }
-        job.cancel()
-        return callResult
+        return result
     }
 
     /**

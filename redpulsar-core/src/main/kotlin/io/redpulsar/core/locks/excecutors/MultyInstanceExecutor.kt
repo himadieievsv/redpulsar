@@ -7,9 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
 import java.util.Collections
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -36,14 +34,9 @@ inline fun <T : Backend, R> multyInstanceExecute(
             backends.forEach { backend ->
                 jobs.add(
                     scope.launch {
-                        try {
-                            val result = callee(backend)
-                            if (result != null) {
-                                results.add(result)
-                            }
-                        } catch (e: CancellationException) {
-                            val logger = KotlinLogging.logger {}
-                            logger.info { "Job canceled: ${e.message}" }
+                        val result = callee(backend)
+                        if (result != null) {
+                            results.add(result)
                         }
                     },
                 )
