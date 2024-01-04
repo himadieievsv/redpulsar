@@ -65,13 +65,14 @@ class CountDownLatchIntegrationTest {
         }
 
         var wasUnlocked = false
-        val time = measureTimeMillis {
-            withTimeoutInThread(100) {
-                val await = waitingLatch.await()
-                assertEquals(CallResult.SUCCESS, await)
-                wasUnlocked = true
+        val time =
+            measureTimeMillis {
+                withTimeoutInThread(100) {
+                    val await = waitingLatch.await()
+                    assertEquals(CallResult.SUCCESS, await)
+                    wasUnlocked = true
+                }
             }
-        }
         assertTrue(time < 100)
         assertTrue(wasUnlocked)
     }
@@ -85,9 +86,10 @@ class CountDownLatchIntegrationTest {
             it.countDown()
         }
 
-        val time = measureTimeMillis {
-            assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
-        }
+        val time =
+            measureTimeMillis {
+                assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
+            }
         assertFalse(time < 1000)
     }
 
@@ -100,9 +102,10 @@ class CountDownLatchIntegrationTest {
             it.countDown()
         }
 
-        val time = measureTimeMillis {
-            assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
-        }
+        val time =
+            measureTimeMillis {
+                assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
+            }
         assertFalse(time < 1000)
     }
 
@@ -120,9 +123,16 @@ class CountDownLatchIntegrationTest {
         }
     }
 
-    private fun createLatch(count: Int, name: String = "my-latch") = createLatches(1, count, name).first()
+    private fun createLatch(
+        count: Int,
+        name: String = "my-latch",
+    ) = createLatches(1, count, name).first()
 
-    private fun createLatches(cardinality: Int, count: Int, name: String = "my-latch"): List<CountDownLatch> {
+    private fun createLatches(
+        cardinality: Int,
+        count: Int,
+        name: String = "my-latch",
+    ): List<CountDownLatch> {
         val countingLatches = mutableListOf<CountDownLatch>()
         repeat(cardinality) {
             countingLatches.add(
