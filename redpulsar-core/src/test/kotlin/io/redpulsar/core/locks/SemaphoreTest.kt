@@ -184,7 +184,6 @@ class SemaphoreTest {
             assertThrows<IllegalArgumentException> { Semaphore(listOf(), 3) }
         }
 
-        // TODO fix this test
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 10, 11, 12, 20, 40])
         fun `validate ttl`(ttl: Int) {
