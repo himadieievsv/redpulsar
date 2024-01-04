@@ -45,7 +45,7 @@ class SimpleLockTest {
         // every { redis.set(eq("test"), any(), any()) } returns null
         every { backend.setLock(eq("test"), any(), any()) } returns null
 
-        val simpleLock = SimpleLock(backend)
+        val simpleLock = SimpleLock(backend, retryDelay = 20.milliseconds, retryCount = 3)
         val permit = simpleLock.lock("test", 1.seconds)
 
         assertFalse(permit)

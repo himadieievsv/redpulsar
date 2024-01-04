@@ -50,7 +50,7 @@ class RedLockTest {
             every { backend.setLock(eq("test"), any(), any()) } returns null
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(backend))
+            val redLock = RedLock(listOf(backend), retryDelay = 20.milliseconds, retryCount = 3)
             val permit = redLock.lock("test")
 
             assertFalse(permit)
@@ -197,7 +197,7 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances)
+            val redLock = RedLock(instances, retryDelay = 20.milliseconds, retryCount = 3)
             val permit = redLock.lock("test")
 
             assertFalse(permit)
@@ -221,7 +221,7 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances)
+            val redLock = RedLock(instances, retryDelay = 20.milliseconds, retryCount = 3)
             val permit = redLock.lock("test", 20.milliseconds)
 
             assertFalse(permit)
