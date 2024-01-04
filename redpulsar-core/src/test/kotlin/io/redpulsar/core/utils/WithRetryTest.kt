@@ -15,10 +15,11 @@ class WithRetryTest {
     @Test
     fun `doesn't retry`() {
         var counter = 0
-        val returnVal = withRetry(3, 1.milliseconds) {
-            counter++
-            listOf("OK")
-        }
+        val returnVal =
+            withRetry(3, 1.milliseconds) {
+                counter++
+                listOf("OK")
+            }
 
         assertEquals(1, counter)
         assertEquals(listOf("OK"), returnVal)
