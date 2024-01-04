@@ -1,3 +1,3 @@
-group = "io.redpulsar-core"
+group = "me.himadieiev.redpulsar-core"
 
 dependencies {}

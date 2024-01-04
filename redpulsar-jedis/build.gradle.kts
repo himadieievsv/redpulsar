@@ -1,4 +1,4 @@
-group = "io.redpulsar-jedis"
+group = "me.himadieiev.redpulsar-jedis"
 
 dependencies {
     api("redis.clients:jedis:5.1.0")
