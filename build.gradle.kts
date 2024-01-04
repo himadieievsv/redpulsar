@@ -15,7 +15,7 @@ allprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "idea")
 
-    group = "io.redpulsar"
+    group = "me.himadieiev.redpulsar"
     version = "0.1.1"
 
     repositories {
