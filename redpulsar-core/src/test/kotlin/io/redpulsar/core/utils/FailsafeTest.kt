@@ -9,12 +9,12 @@ import org.junit.jupiter.api.assertThrows
 
 @Tag(TestTags.UNIT)
 class FailsafeTest {
-
     @Test
     fun `returned value correctly`() {
-        val returnValue = failsafe(0) {
-            "OK"
-        }
+        val returnValue =
+            failsafe(0) {
+                "OK"
+            }
         assertEquals("OK", returnValue)
     }
 
