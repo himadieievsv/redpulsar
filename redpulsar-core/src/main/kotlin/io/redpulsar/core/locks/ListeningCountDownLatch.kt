@@ -20,6 +20,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
+/**
+ * A distributed locking mechanics, intended for synchronization of multiple workloads distributed across cloud.
+ * Allows one or more workloads to wait until a set of other workload are get ready or finished.
+ * [ListeningCountDownLatch] implementation uses Redis Pub/Sub mechanism to notify other instances
+ * about counter reached to 0.
+ */
 class ListeningCountDownLatch(
     private val name: String,
     private val count: Int,
@@ -44,6 +50,11 @@ class ListeningCountDownLatch(
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
+    /**
+     * Decrements the count of the latch.
+     * @return [CallResult] SUCCESS or FAILED. SUCCESS means that the count was decremented on majority
+     * of underling instances. And FAILED means that majority of underling instances are down or other network issue.
+     */
     override fun countDown(): CallResult {
         // Skip if internal counter is already 0
         if (currentCounter.get() <= 0) return CallResult.SUCCESS
@@ -57,10 +68,19 @@ class ListeningCountDownLatch(
         }
     }
 
+    /**
+     * Block exception in current thread until the count of the latch is zero.
+     * @return [CallResult] SUCCESS or FAILED. SUCCESS means that the count was decremented on majority instances
+     */
     override fun await(): CallResult {
         return await(maxDuration)
     }
 
+    /**
+     * Block exception in current thread until the count of the latch is zero with timeout.
+     * @param timeout [Duration] the maximum time to wait.
+     * @return [CallResult] SUCCESS or FAILED. SUCCESS means that the count was decremented on majority instances
+     */
     override fun await(timeout: Duration): CallResult {
         require(timeout > minimalMaxDuration) { "Timeout must be greater that [minimalMaxDuration]" }
         val job =

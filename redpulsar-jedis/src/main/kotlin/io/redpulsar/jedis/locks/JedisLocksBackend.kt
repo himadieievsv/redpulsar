@@ -6,6 +6,9 @@ import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
 import kotlin.time.Duration
 
+/**
+ * An implementation of [LocksBackend] that uses Redis as a storage.
+ */
 internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend() {
     override fun setLock(
         resourceName: String,

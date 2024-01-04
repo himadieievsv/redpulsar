@@ -7,6 +7,9 @@ import io.redpulsar.core.utils.failsafe
 import io.redpulsar.lettuce.LettucePooled
 import kotlin.time.Duration
 
+/**
+ * An implementation of [LocksBackend] that uses Redis as a storage.
+ */
 internal class LettuceLocksBackend(private val redis: LettucePooled<String, String>) : LocksBackend() {
     override fun setLock(
         resourceName: String,

@@ -11,6 +11,9 @@ import redis.clients.jedis.JedisPubSub
 import redis.clients.jedis.UnifiedJedis
 import kotlin.time.Duration
 
+/**
+ * An implementation of [CountDownLatchBackend] that uses Redis as a storage.
+ */
 internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : CountDownLatchBackend() {
     override fun count(
         latchKeyName: String,
