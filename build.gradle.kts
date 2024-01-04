@@ -28,7 +28,7 @@ subprojects {
 
     tasks.test {
         useJUnitPlatform {
-            excludeTags(System.getProperty("excludeTags", "no-tag"))
+            excludeTags(*System.getProperty("excludeTags", "no-tag").split(",").toTypedArray())
         }
         reports {
             junitXml.apply {
