@@ -19,6 +19,6 @@ suspend inline fun <T> waitAnyJobs(
     jobs.forEach { job -> job.cancel() }
     // enough one success result to consider latch opened
     if (results.isNotEmpty()) {
-        repeat(jobs.size - 1) { results.add(results.first()) }
+        repeat(jobs.size - results.size) { results.add(results.first()) }
     }
 }
