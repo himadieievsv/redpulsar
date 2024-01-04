@@ -12,7 +12,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
-class LettuceCountDownLatchBackend(private val redis: LettucePubSubPooled<String, String>) : CountDownLatchBackend() {
+internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPooled<String, String>) :
+    CountDownLatchBackend() {
     override fun count(
         latchKeyName: String,
         channelName: String,
@@ -59,11 +60,19 @@ class LettuceCountDownLatchBackend(private val redis: LettucePubSubPooled<String
         clientId: String,
         count: Int,
     ): Long? {
-        TODO("Not yet implemented")
+        return failsafe(null) {
+            redis.sync { sync ->
+                sync.srem(latchKeyName, "$clientId$count")
+            }
+        }
     }
 
     override fun checkCount(latchKeyName: String): Long? {
-        TODO("Not yet implemented")
+        return failsafe(null) {
+            redis.sync { sync ->
+                sync.scard(latchKeyName)
+            }
+        }
     }
 
     override fun listen(channelName: String): Flow<String> {
@@ -84,38 +93,43 @@ class LettuceCountDownLatchBackend(private val redis: LettucePubSubPooled<String
                             pattern: String?,
                             channel: String?,
                             message: String?,
-                        ) {}
+                        ) {
+                        }
 
                         override fun subscribed(
                             channel: String?,
                             count: Long,
-                        ) {}
+                        ) {
+                        }
 
                         override fun psubscribed(
                             pattern: String?,
                             count: Long,
-                        ) {}
+                        ) {
+                        }
 
                         override fun unsubscribed(
                             channel: String?,
                             count: Long,
-                        ) {}
+                        ) {
+                        }
 
                         override fun punsubscribed(
                             pattern: String?,
                             count: Long,
-                        ) {}
+                        ) {
+                        }
                     }
                 val job =
                     launch {
                         redis.sync { sync ->
                             sync.statefulConnection.addListener(pubSub)
-                            sync.subscribe("test")
+                            sync.subscribe(channelName)
                             while (isActive) {
-                                Thread.sleep(50)
+                                Thread.sleep(20)
                             }
                             sync.statefulConnection.removeListener(pubSub)
-                            sync.unsubscribe("test")
+                            sync.unsubscribe(channelName)
                         }
                     }
                 awaitClose {
