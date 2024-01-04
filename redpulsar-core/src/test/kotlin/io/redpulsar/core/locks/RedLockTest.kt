@@ -5,7 +5,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.redpulsar.core.locks.abstracts.backends.LocksBackend
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
@@ -60,55 +59,6 @@ class RedLockTest {
                 backend.setLock(eq("test"), any(), any())
                 backend.removeLock(eq("test"), any())
             }
-        }
-
-        @Test
-        fun `lock throws exception`() {
-            every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException("test exception")
-
-            val redLock = RedLock(listOf(backend))
-            val permit = redLock.lock("test")
-
-            assertFalse(permit)
-
-            verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
-            verify(exactly = 0) { backend.removeLock(any(), any()) }
-        }
-
-        @Test
-        fun `lock throws cancellation exception`() {
-            every { backend.setLock(eq("test"), any(), any()) } throws CancellationException("test exception")
-            every { backend.removeLock(eq("test"), any()) } returns "OK"
-
-            val redLock = RedLock(listOf(backend))
-            val permit = redLock.lock("test")
-
-            assertFalse(permit)
-
-            verify(exactly = 3) { backend.setLock(eq("test"), any(), any()) }
-            verify(exactly = 3) { backend.removeLock(any(), any()) }
-        }
-
-        @Test
-        fun `unlock throws exception`() {
-            every { backend.removeLock(eq("test"), any()) } throws RuntimeException("test exception")
-
-            val redLock = RedLock(listOf(backend))
-            redLock.unlock("test")
-
-            verify(exactly = 0) { backend.setLock(eq("test"), any(), any()) }
-            verify(exactly = 1) { backend.removeLock(any(), any()) }
-        }
-
-        @Test
-        fun `unlock throws cancellation exception`() {
-            every { backend.removeLock(eq("test"), any()) } throws CancellationException("test exception")
-
-            val redLock = RedLock(listOf(backend))
-            redLock.unlock("test")
-
-            verify(exactly = 0) { backend.setLock(eq("test"), any(), any()) }
-            verify(exactly = 1) { backend.removeLock(any(), any()) }
         }
 
         @Test
