@@ -1,4 +1,4 @@
-package integrationtests
+package io.redpulsar.jedis.integrationtests
 
 import TestTags
 import getInstances
@@ -6,8 +6,7 @@ import io.redpulsar.core.locks.ListeningCountDownLatch
 import io.redpulsar.core.locks.api.CallResult
 import io.redpulsar.core.locks.api.CountDownLatch
 import io.redpulsar.core.utils.withTimeoutInThread
-import io.redpulsar.lettuce.LettucePubSubPooled
-import io.redpulsar.lettuce.locks.LettuceCountDownLatchBackend
+import io.redpulsar.jedis.locks.JedisCountDownLatchBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -20,21 +19,20 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import redis.clients.jedis.UnifiedJedis
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
 class CountDownLatchIntegrationTest {
-    private lateinit var instances: List<LettucePubSubPooled<String, String>>
-    private lateinit var backends: List<LettuceCountDownLatchBackend>
+    private lateinit var instances: List<UnifiedJedis>
+    private lateinit var backends: List<JedisCountDownLatchBackend>
 
     @BeforeEach
     fun setUp() {
         instances = getInstances()
-        instances.forEach {
-            it.sync { sync -> sync.flushall() }
-        }
-        backends = instances.map { LettuceCountDownLatchBackend(it) }
+        instances.forEach { it.flushAll() }
+        backends = instances.map { JedisCountDownLatchBackend(it) }
     }
 
     @ParameterizedTest(name = "latch opened after {0} counts")

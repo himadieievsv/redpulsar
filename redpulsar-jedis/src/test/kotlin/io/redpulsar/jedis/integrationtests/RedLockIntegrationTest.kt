@@ -1,11 +1,10 @@
-package integrationtests
+package io.redpulsar.jedis.integrationtests
 
 import TestTags
-import getPooledInstances
+import getInstances
 import io.redpulsar.core.locks.RedLock
 import io.redpulsar.core.locks.abstracts.backends.LocksBackend
-import io.redpulsar.lettuce.LettucePooled
-import io.redpulsar.lettuce.locks.LettuceLocksBackend
+import io.redpulsar.jedis.locks.JedisLocksBackend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -14,19 +13,20 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import redis.clients.jedis.UnifiedJedis
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
 class RedLockIntegrationTest {
-    private lateinit var instances: List<LettucePooled<String, String>>
+    private lateinit var instances: List<UnifiedJedis>
     private lateinit var backends: List<LocksBackend>
 
     @BeforeEach
     fun setUp() {
-        instances = getPooledInstances()
-        instances.forEach { lettuce -> lettuce.sync { redis -> redis.flushall() } }
-        backends = instances.map { LettuceLocksBackend(it) }
+        instances = getInstances()
+        instances.forEach { it.flushAll() }
+        backends = instances.map { JedisLocksBackend(it) }
     }
 
     @Test
@@ -36,7 +36,7 @@ class RedLockIntegrationTest {
 
         assertTrue(permit)
 
-        val clients = instances.map { it.sync { redis -> redis.get("test") } }
+        val clients = instances.map { it.get("test") }
         assertTrue(clients[0] == clients[1] && clients[1] == clients[2])
     }
 
@@ -46,7 +46,7 @@ class RedLockIntegrationTest {
         redLock.lock("test", 10.seconds)
         redLock.unlock("test")
 
-        instances.map { it.sync { redis -> redis.get("test") } }.forEach { assertNull(it) }
+        instances.map { it.get("test") }.forEach { assertNull(it) }
     }
 
     @Test

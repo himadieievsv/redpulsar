@@ -421,7 +421,7 @@ class ListeningCountDownLatchTest {
             val flow = flow<String> { IOException("test exception") }
             instances.forEach { backend ->
                 backend.everyCheckCount("countdownlatch:test", 1)
-                backend1.everyListen(flow)
+                backend.everyListen(flow)
             }
             val latch = ListeningCountDownLatch("test", 2, backends = instances, retryDelay = 1.milliseconds)
             assertEquals(CallResult.FAILED, latch.await())

@@ -4,9 +4,11 @@ import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.system.measureTimeMillis
 
+@Tag(TestTags.UNIT)
 class WithTimeoutInThreadTest {
     private val logger = KotlinLogging.logger {}
 

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -16,6 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class SemaphoreTest {
     @Nested
     inner class SingleRedisInstance {
@@ -58,80 +60,8 @@ class SemaphoreTest {
             }
         }
 
-//        @Test
-//        fun `instance is down`() {
-//            val pipelined = mockk<Pipeline>()
-//            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } throws IOException()
-//            every { redis.pipelined() } returns pipelined
-//            every { pipelined.srem(any<String>(), any()) } returns mockk()
-//            every { pipelined.del(any<String>()) } returns mockk()
-//            every { pipelined.sync() } throws IOException()
-//
-//            val semaphore = Semaphore(listOf(redis), 3, 15.milliseconds, 4)
-//            val permit = semaphore.lock("test")
-//
-//            assertFalse(permit)
-//
-//            verify(exactly = 4) {
-//                redis.eval(
-//                    any<String>(),
-//                    match<List<String>> {
-//                        it.size == 2 &&
-//                                it[0] == "semaphore:leasers:test" &&
-//                                it[1].startsWith("semaphore:test:")
-//                    },
-//                    any<List<String>>(),
-//                )
-//                pipelined.srem(eq("semaphore:leasers:test"), any())
-//                pipelined.del(match<String> { it.startsWith("semaphore:test:") })
-//                pipelined.sync()
-//            }
-//        }
-//
-//        @Test
-//        fun `instance is down only for the first command`() {
-//            val pipelined = mockk<Pipeline>()
-//            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } throws IOException()
-//            every { redis.eval(any(), eq(listOf("semaphore:leasers:test")), eq(listOf("semaphore:test"))) } returns "OK"
-//            every { redis.pipelined() } returns pipelined
-//            every { pipelined.srem(any<String>(), any()) } returns mockk()
-//            every { pipelined.del(any<String>()) } returns mockk()
-//            every { pipelined.sync() } returns Unit
-//            every { pipelined.close() } returns Unit
-//
-//            val semaphore = Semaphore(listOf(redis), 3, 15.milliseconds, 2)
-//            val permit = semaphore.lock("test")
-//
-//            assertFalse(permit)
-//
-//            verify(exactly = 2) {
-//                redis.eval(
-//                    any<String>(),
-//                    match<List<String>> {
-//                        it.size == 2 &&
-//                                it[0] == "semaphore:leasers:test" &&
-//                                it[1].startsWith("semaphore:test:")
-//                    },
-//                    any<List<String>>(),
-//                )
-//                // unlocking
-//                pipelined.srem(eq("semaphore:leasers:test"), any())
-//                pipelined.del(match<String> { it.startsWith("semaphore:test:") })
-//                pipelined.sync()
-//                // cleaning up
-//                redis.eval(any(), eq(listOf("semaphore:leasers:test")), eq(listOf("semaphore:test")))
-//            }
-//        }
-
         @Test
         fun `lock already taken or instance is down`() {
-//            val pipelined = mockk<Pipeline>()
-//            every { redis.eval(any(), any<List<String>>(), any<List<String>>()) } returns null
-//            every { redis.pipelined() } returns pipelined
-//            every { pipelined.srem(any<String>(), any()) } returns mockk()
-//            every { pipelined.del(any<String>()) } returns mockk()
-//            every { pipelined.sync() } returns Unit
-//            every { pipelined.close() } returns Unit
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -160,21 +90,6 @@ class SemaphoreTest {
             assertFalse(permit)
 
             verify(exactly = 4) {
-//                redis.eval(
-//                    any<String>(),
-//                    match<List<String>> {
-//                        it.size == 2 &&
-//                                it[0] == "semaphore:leasers:test" &&
-//                                it[1].startsWith("semaphore:test:")
-//                    },
-//                    any<List<String>>(),
-//                )
-//                // unlocking
-//                pipelined.srem(eq("semaphore:leasers:test"), any())
-//                pipelined.del(match<String> { it.startsWith("semaphore:test:") })
-//                pipelined.sync()
-//                // cleaning up
-//                redis.eval(any(), eq(listOf("semaphore:leasers:test")), eq(listOf("semaphore:test")))
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },
@@ -198,13 +113,6 @@ class SemaphoreTest {
 
         @Test
         fun `unlock resource`() {
-//            val pipelined = mockk<Pipeline>()
-//            every { redis.eval(any(), eq(listOf("semaphore:leasers:test")), eq(listOf("semaphore:test"))) } returns null
-//            every { redis.pipelined() } returns pipelined
-//            every { pipelined.srem(any<String>(), any()) } returns mockk()
-//            every { pipelined.del(any<String>()) } returns mockk()
-//            every { pipelined.sync() } returns Unit
-//            every { pipelined.close() } returns Unit
             every {
                 backend.removeSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -231,13 +139,6 @@ class SemaphoreTest {
             }
             verify(exactly = 0) {
                 backend.setSemaphoreLock(any(), any(), any(), any(), any())
-//                redis.eval(
-//                    any<String>(),
-//                    match<List<String>> {
-//                        it.size == 2 && it[0] == "semaphore:leasers:test" && it[1].startsWith("semaphore:test:")
-//                    },
-//                    any<List<String>>(),
-//                )
             }
         }
 
@@ -283,17 +184,16 @@ class SemaphoreTest {
             assertThrows<IllegalArgumentException> { Semaphore(listOf(), 3) }
         }
 
-        // TODO fix this test
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
-        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
+        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 10, 11, 12, 20, 40])
         fun `validate ttl`(ttl: Int) {
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },
                     any(),
+                    eq(3),
                     any(),
-                    eq(ttl.seconds),
                 )
             } returns "OK"
 
@@ -324,7 +224,6 @@ class SemaphoreTest {
         @Test
         fun `all instances are in quorum`() {
             instances.forEach { backend ->
-                // every { redis.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
                 every {
                     backend.setSemaphoreLock(
                         eq("semaphore:leasers:test"),
@@ -342,13 +241,6 @@ class SemaphoreTest {
             assertTrue(permit)
             instances.forEach { backend ->
                 verify(exactly = 1) {
-//                    redis.eval(
-//                        any<String>(),
-//                        match<List<String>> {
-//                            it.size == 2 && it[0] == "semaphore:leasers:test" && it[1].startsWith("semaphore:test:")
-//                        },
-//                        any<List<String>>(),
-//                    )
                     backend.setSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
@@ -366,9 +258,6 @@ class SemaphoreTest {
 
         @Test
         fun `two instances are in quorum`() {
-//            every { redis1.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
-//            every { redis2.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns null
-//            every { redis3.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
             every {
                 backend1.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -404,13 +293,6 @@ class SemaphoreTest {
 
             instances.forEach { backend ->
                 verify(exactly = 1) {
-//                    redis.eval(
-//                        any<String>(),
-//                        match<List<String>> {
-//                            it.size == 2 && it[0] == "semaphore:leasers:test" && it[1].startsWith("semaphore:test:")
-//                        },
-//                        any<List<String>>(),
-//                    )
                     backend.setSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
@@ -428,26 +310,6 @@ class SemaphoreTest {
 
         @Test
         fun `quorum wasn't reach`() {
-//            val pipelines = listOf<Pipeline>(mockk(), mockk(), mockk())
-//            every { redis1.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns null
-//            every { redis2.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns "OK"
-//            every { redis3.eval(any<String>(), any<List<String>>(), any<List<String>>()) } returns null
-//            val pipelineIterator = pipelines.iterator()
-//            instances.forEach { redis ->
-//                val pipelined = pipelineIterator.next()
-//                every {
-//                    redis.eval(
-//                        any(),
-//                        eq(listOf("semaphore:leasers:test")),
-//                        eq(listOf("semaphore:test")),
-//                    )
-//                } returns "OK"
-//                every { redis.pipelined() } returns pipelined
-//                every { pipelined.srem(any<String>(), any()) } returns mockk()
-//                every { pipelined.del(any<String>()) } returns mockk()
-//                every { pipelined.sync() } returns Unit
-//                every { pipelined.close() } returns Unit
-//            }
             every {
                 backend1.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -499,14 +361,6 @@ class SemaphoreTest {
 
             instances.forEach { backend ->
                 verify(exactly = 3) {
-//                    redis.eval(
-//                        any<String>(),
-//                        match<List<String>> {
-//                            it.size == 2 && it[0] == "semaphore:leasers:test" && it[1].startsWith("semaphore:test:")
-//                        },
-//                        any<List<String>>(),
-//                    )
-//                    redis.eval(any(), eq(listOf("semaphore:leasers:test")), eq(listOf("semaphore:test")))
                     backend.setSemaphoreLock(
                         eq("semaphore:leasers:test"),
                         match { it.startsWith("semaphore:test:") },
@@ -524,13 +378,6 @@ class SemaphoreTest {
                     backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
                 }
             }
-//            pipelines.forEach { pipelined ->
-//                verify(exactly = 3) {
-//                    pipelined.srem(eq("semaphore:leasers:test"), any())
-//                    pipelined.del(match<String> { it.startsWith("semaphore:test:") })
-//                    pipelined.sync()
-//                }
-//            }
         }
     }
 }

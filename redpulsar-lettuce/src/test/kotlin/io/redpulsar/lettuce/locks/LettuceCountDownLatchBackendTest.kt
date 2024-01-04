@@ -20,6 +20,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -27,6 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
+@Tag(TestTags.UNIT)
 class LettuceCountDownLatchBackendTest {
     private lateinit var redis: LettucePubSubPooled<String, String>
     private lateinit var sync: RedisPubSubCommands<String, String>

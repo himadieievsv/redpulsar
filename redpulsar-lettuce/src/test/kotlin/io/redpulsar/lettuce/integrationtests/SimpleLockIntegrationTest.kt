@@ -1,4 +1,4 @@
-package integrationtests
+package io.redpulsar.lettuce.integrationtests
 
 import TestTags
 import getPooledInstances
