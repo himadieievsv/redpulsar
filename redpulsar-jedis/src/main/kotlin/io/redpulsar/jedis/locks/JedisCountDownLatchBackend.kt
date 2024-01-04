@@ -11,7 +11,7 @@ import redis.clients.jedis.JedisPubSub
 import redis.clients.jedis.UnifiedJedis
 import kotlin.time.Duration
 
-class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : CountDownLatchBackend() {
+internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : CountDownLatchBackend() {
     override fun count(
         latchKeyName: String,
         channelName: String,
@@ -75,10 +75,10 @@ class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : CountDownLat
                             }
                         }
                     }
-                val job = launch { jedis.subscribe(pubSub, "test") }
+                val job = launch { jedis.subscribe(pubSub, channelName) }
                 awaitClose {
                     try {
-                        pubSub.unsubscribe("test")
+                        pubSub.unsubscribe(channelName)
                     } catch (e: Exception) {
                         // supress unsubscribe errors as it might be uew to lost connection
                         val logger = KotlinLogging.logger {}
