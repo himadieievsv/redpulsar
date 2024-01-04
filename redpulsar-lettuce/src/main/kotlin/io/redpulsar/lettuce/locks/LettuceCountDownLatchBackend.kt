@@ -12,6 +12,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
+/**
+ * An implementation of [CountDownLatchBackend] that uses Redis as a storage.
+ */
 internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPooled<String, String>) :
     CountDownLatchBackend() {
     override fun count(

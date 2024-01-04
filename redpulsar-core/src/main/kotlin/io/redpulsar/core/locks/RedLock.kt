@@ -23,6 +23,10 @@ class RedLock(
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
+    /**
+     * Lock the resource with given name on multiple Redis instances/clusters.
+     * @return true if lock was acquired, false otherwise.
+     */
     override fun lock(
         resourceName: String,
         ttl: Duration,

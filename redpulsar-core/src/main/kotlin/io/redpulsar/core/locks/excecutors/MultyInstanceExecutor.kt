@@ -13,7 +13,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Coroutine used buy callee must be cooperative coroutine (not blocking).
+ * Algorithm for run closure on multiple remote instances proxied by [backends].
+ * Each call will be executed in separate [Job].
+ * After all calls are finished, algorithm will check whether the result is successful depends on a strategy.
+ * So far there are two self-explanatory strategies: [waitAllJobs] and [waitAnyJobs].
+ * Besides those strategies, there is a clock drift. Some operation might be time sensitive
+ * e.g. setting expiration date, so clock drift is used to judge whether the result is valid allowing
+ * some reasonable time difference in closure executions on multiple instances.
+ * Coroutine used by callee must be cooperative coroutine (not blocking).
  * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
  */
 inline fun <T : Backend, R> multyInstanceExecute(

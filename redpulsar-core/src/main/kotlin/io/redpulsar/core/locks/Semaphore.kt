@@ -9,7 +9,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * An implementation for Semaphore lock in distributed systems.
- * Semaphore lock is a lock that allows multiple clients to acquire the lock until limit reached.
+ * Semaphore lock is a lock that allows multiple clients to acquire the lock until lock limit is reached.
  */
 class Semaphore(
     backends: List<LocksBackend>,
@@ -27,6 +27,11 @@ class Semaphore(
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
+    /**
+     * Lock the resource with given name on a single Redis instance/cluster.
+     * Multiple locks can be acquired.
+     * @return true if lock was acquired, false otherwise.
+     */
     override fun lock(
         resourceName: String,
         ttl: Duration,

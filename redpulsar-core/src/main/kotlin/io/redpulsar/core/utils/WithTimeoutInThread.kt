@@ -2,6 +2,9 @@ package io.redpulsar.core.utils
 
 import mu.KotlinLogging
 
+/**
+ * Run closure in current thread with timeout control in separate thread.
+ */
 inline fun <T> withTimeoutInThread(
     timeoutMillis: Long,
     block: () -> T,
