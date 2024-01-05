@@ -139,7 +139,7 @@ class ListeningCountDownLatch(
     private fun count(): List<String?> {
         return backends.executeWithRetry(
             scope = scope,
-            releaseTime = maxDuration,
+            timeout = maxDuration,
             retryCount = retryCount,
             retryDelay = retryDelay,
         ) { backend ->
@@ -157,7 +157,7 @@ class ListeningCountDownLatch(
     private fun undoCount() {
         backends.executeWithRetry(
             scope = scope,
-            releaseTime = maxDuration,
+            timeout = maxDuration,
             retryCount = retryCount,
             retryDelay = retryDelay,
         ) { backend ->
@@ -172,7 +172,7 @@ class ListeningCountDownLatch(
     private fun checkCount(scope: CoroutineScope): List<Long?> {
         return backends.executeWithRetry(
             scope = scope,
-            releaseTime = maxDuration * 2,
+            timeout = maxDuration * 2,
             retryCount = retryCount,
             retryDelay = retryDelay,
         ) { backend ->
@@ -186,7 +186,7 @@ class ListeningCountDownLatch(
     ): List<String?> {
         return backends.executeWithRetry(
             scope = scope,
-            releaseTime = timeout,
+            timeout = timeout,
             retryCount = retryCount,
             retryDelay = retryDelay,
             // Allow non-quorum polling here. That might need to be changed as it could lead to unexpected behavior
