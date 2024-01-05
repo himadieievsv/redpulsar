@@ -37,7 +37,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -61,7 +61,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -85,7 +85,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -105,7 +105,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 waiter = ::waitAnyJobs,
             ) { backend -> backend.test() }
 
@@ -124,7 +124,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 waiter = ::waitAnyJobs,
             ) { backend -> backend.test() }
 
@@ -146,7 +146,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecuteWithRetry(
                 backends = backends,
                 scope = scope,
-                releaseTime = 1.seconds,
+                timeout = 1.seconds,
                 retryCount = 3,
                 retryDelay = 1.milliseconds,
                 waiter = ::waitAllJobs,

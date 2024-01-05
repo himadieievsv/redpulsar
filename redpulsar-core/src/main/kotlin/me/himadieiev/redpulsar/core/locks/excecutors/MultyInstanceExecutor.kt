@@ -13,20 +13,20 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Algorithm for run closure on multiple remote instances proxied by [backends].
- * Each call will be executed in separate [Job].
- * After all calls are finished, algorithm will check whether the result is successful depends on a strategy.
- * So far there are two self-explanatory strategies: [waitAllJobs] and [waitAnyJobs].
- * Besides those strategies, there is a clock drift. Some operation might be time sensitive
- * e.g. setting expiration date, so clock drift is used to judge whether the result is valid allowing
- * some reasonable time difference in closure executions on multiple instances.
+ * An algorithm for running closure on multiple remote instances proxied by [backends].
+ * Each call will be executed in separate [Job] and wait for the result using one of two self-explanatory strategies:
+ * [waitAllJobs] and [waitAnyJobs].
+ * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
+ * spend for getting results is not exceeding some reasonable time difference using [timeout] and
+ * clok drift.
+ *
  * Coroutine used by callee must be cooperative coroutine (not blocking).
  * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
  */
 inline fun <T : Backend, R> multyInstanceExecute(
     backends: List<T>,
     scope: CoroutineScope,
-    releaseTime: Duration,
+    timeout: Duration,
     defaultDrift: Duration = 3.milliseconds,
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
@@ -34,8 +34,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
     val jobs = mutableListOf<Job>()
     val quorum: Int = backends.size / 2 + 1
     val results = Collections.synchronizedList(mutableListOf<R>())
-    val clockDrift =
-        (releaseTime.inWholeMilliseconds * 0.01).toLong() + defaultDrift.inWholeMilliseconds * backends.size
+    val clockDrift = (timeout.inWholeMilliseconds * 0.01).toLong() + defaultDrift.inWholeMilliseconds
     val timeDiff =
         measureTimeMillis {
             backends.forEach { backend ->
@@ -50,7 +49,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
             }
             runBlocking(scope.coroutineContext) { waiter(jobs, results) }
         }
-    val validity = releaseTime.inWholeMilliseconds - timeDiff - clockDrift
+    val validity = timeout.inWholeMilliseconds - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
         return emptyList()
     }
@@ -60,7 +59,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
 inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     backends: List<T>,
     scope: CoroutineScope,
-    releaseTime: Duration,
+    timeout: Duration,
     defaultDrift: Duration = 3.milliseconds,
     retryCount: Int = 3,
     retryDelay: Duration = 100.milliseconds,
@@ -71,7 +70,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
         return@withRetry multyInstanceExecute(
             backends = backends,
             scope = scope,
-            releaseTime = releaseTime,
+            timeout = timeout,
             defaultDrift = defaultDrift,
             waiter = waiter,
             callee = callee,
@@ -81,7 +80,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
 
 fun <T : Backend, R> List<T>.executeWithRetry(
     scope: CoroutineScope,
-    releaseTime: Duration,
+    timeout: Duration,
     defaultDrift: Duration = 3.milliseconds,
     retryCount: Int = 3,
     retryDelay: Duration = 100.milliseconds,
@@ -91,7 +90,7 @@ fun <T : Backend, R> List<T>.executeWithRetry(
     return multyInstanceExecuteWithRetry(
         backends = this,
         scope = scope,
-        releaseTime = releaseTime,
+        timeout = timeout,
         defaultDrift = defaultDrift,
         retryCount = retryCount,
         retryDelay = retryDelay,
