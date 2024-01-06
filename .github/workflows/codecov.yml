@@ -1,0 +1,33 @@
+name: Report Code Coverage
+
+on:
+  workflow_run:
+    workflows: [ "Unit Tests" ]
+    types:
+      - completed
+  push:
+    branches: [ "main" ]
+
+jobs:
+  codecov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+      - name: Run tests
+        run: |
+          ./gradlew test -DexcludeTags="integration"
+      - name: Test Coverage
+        run: |
+          ./gradlew \
+          :redpulsar-core:koverXmlReport \
+          :redpulsar-jedis:koverXmlReport \
+          :redpulsar-lettuce:koverXmlReport \
+          -DexcludeTags="integration"
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
