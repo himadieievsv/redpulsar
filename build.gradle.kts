@@ -7,14 +7,11 @@ buildscript {
 plugins {
     kotlin("jvm") version "1.9.22"
     id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
-    application
+    `java-library`
     idea
 }
 
 allprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    apply(plugin = "idea")
-
     group = "me.himadieiev.redpulsar"
     version = "0.1.1"
 
@@ -25,6 +22,9 @@ allprojects {
 
 subprojects {
     apply(plugin = "kotlin")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "idea")
+    apply(plugin = "java-library")
 
     tasks.test {
         useJUnitPlatform {

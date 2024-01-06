@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.minutes
 /**
  * A factory for creating lock instances.
  */
-interface LockFactory {
+class LockFactory {
     companion object {
         /**
          * Create a new [SimpleLock] instance.
