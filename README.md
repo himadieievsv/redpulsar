@@ -1,6 +1,9 @@
 # RedPulsar
 
+![Unit Tests](https://github.com/himadieievsv/redpulsar/actions/workflows/unit-tests.yml/badge.svg)
+![Integration Tests](https://github.com/himadieievsv/redpulsar/actions/workflows/integration-tests.yml/badge.svg)
 [![Apache 2.0 licensed](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
+[![codecov](https://codecov.io/gh/himadieievsv/redpulsar/graph/badge.svg?token=ME7ESPRABQ)](https://codecov.io/gh/himadieievsv/redpulsar)
 
 ## What is RedPulsar?
 RedPulsar provides Distributed Locks with Redis and other utilities for cloud computing or different kinds of distributed systems.
