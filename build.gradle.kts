@@ -8,7 +8,7 @@ plugins {
     kotlin("jvm") version "1.9.22"
     `java-library`
     id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
-    jacoco
+    id("org.jetbrains.kotlinx.kover") version "0.7.5"
     `maven-publish`
     idea
 }
@@ -28,7 +28,7 @@ subprojects {
     apply(plugin = "idea")
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
-    apply(plugin = "jacoco")
+    apply(plugin = "org.jetbrains.kotlinx.kover")
 
     kotlin {
         jvmToolchain(11)
@@ -113,14 +113,6 @@ subprojects {
             junitXml.apply {
                 isOutputPerTestCase = true
             }
-        }
-    }
-
-    tasks.withType<JacocoReport> {
-        reports {
-            xml.required.set(true)
-            csv.required.set(false)
-            html.required.set(false)
         }
     }
 }
