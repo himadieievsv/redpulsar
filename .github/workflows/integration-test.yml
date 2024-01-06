@@ -1,4 +1,4 @@
-name: Integration tests
+name: Integration test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  integration-tests:
+  integration-test:
     strategy:
       matrix:
         version: [ 11, 17, 21 ]
