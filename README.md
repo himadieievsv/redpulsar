@@ -52,7 +52,7 @@ docker-compose up -d
 
 ### Extending RedPulsar to use other data stores 
 Currently, all features are implemented with Redis. However, it is possible to extend RedPulsar to use other distributed data stores like AWS DynamoDB / Casandra / ScyllaDB etc. Even it could be implemented with RDBMS like MySQL or PostgreSQL.
-RedPulsar project have an abstraction level for data storage called [Backend](./redpulsar-core/src/main/kotlin/me/himadieiev/redpulsar/core/locks/abstracts/Backend.kt). See package [me.himadieiev.redpulsar.core.locks.abstracts.backends](./redpulsar-core/src/main/kotlin/me/himadieiev/redpulsar/core/locks/abstracts/backends) for details what particular operation should be implemented.
+RedPulsar project have an abstraction level for data storage called [Backend](./redpulsar-core/src/main/kotlin/me/himadieiev/redpulsar/core/locks/abstracts/Backend.kt). See package [com.himadieiev.redpulsar.core.locks.abstracts.backends](./redpulsar-core/src/main/kotlin/me/himadieiev/redpulsar/core/locks/abstracts/backends) for details what particular operation should be implemented.
 New data storage should use a new module and implement same abstractions as current Redis implementations. 
 
 ### Contributing

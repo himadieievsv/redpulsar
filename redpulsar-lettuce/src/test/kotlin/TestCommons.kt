@@ -1,11 +1,11 @@
+import com.himadieiev.redpulsar.lettuce.LettucePooled
+import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import io.lettuce.core.RedisClient
 import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.codec.StringCodec
 import io.lettuce.core.protocol.CommandArgs
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
-import me.himadieiev.redpulsar.lettuce.LettucePooled
-import me.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import java.time.Duration
 

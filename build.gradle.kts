@@ -14,7 +14,7 @@ plugins {
 }
 
 allprojects {
-    group = "me.himadieiev"
+    group = "com.himadieiev"
     version = "0.9.1"
 
     repositories {
