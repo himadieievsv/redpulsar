@@ -19,6 +19,10 @@ Currently, RedPulsar supports Redis as a data storage. It can be used with both 
 - See [redpulsar-jedis](./redpulsar-jedis/README.md) module for details.
 - See [redpulsar-lettuce](./redpulsar-lettuce/README.md) module for details.
 
+## Java compatibility
+Minimal required Java version is 11.
+RedPulsar project is written in Kotlin, but can be easily used in Java projects too.
+
 ## Getting started 
 - See [redpulsar-jedis](./redpulsar-jedis/README.md#getting-started) for getting started with Jedis.
 - See [redpulsar-lettuce](./redpulsar-lettuce/README.md#getting-started) for getting started with Lettuce.

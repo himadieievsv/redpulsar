@@ -23,6 +23,29 @@ lock.lock("myResource", Duration.ofSeconds(1))
 lock.unlock("myResource")
 ```
 
+### Getting started with Java
+```java
+// Create Lettuce Pooled Client
+var client = RedisClient.create("redis://localhost:6379");
+var poolConfig = new GenericObjectPoolConfig<StatefulRedisConnection<String, String>>();
+var lettucePooled = new LettucePooled<>(poolConfig, client::connect);
+```
+Or if you need Pub/Sub support:
+```java
+// Create Lettuce Pooled Pub/Sub Client
+var client = RedisClient.create("redis://localhost:6379");
+var poolConfig = new GenericObjectPoolConfig<StatefulRedisPubSubConnection<String, String>>();
+var lettucePubSubPooled = new LettucePubSubPooled<>(poolConfig, client::connectPubSub);
+```
+Creating lock:
+```java
+// Create lock
+var lock = LockFactory.createSimpleLock(lettucePooled, Duration.ofSeconds(1), 3);
+lock.lock("myResource", Duration.ofSeconds(1));
+// do something
+lock.unlock("myResource");
+```
+
 ## Lettuce pooled
 This module provides Lettuce pooled client that simplify connection management. 
 Instead of creating new connection each time or manage connection pool manually you can use this module.
