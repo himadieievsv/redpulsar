@@ -190,7 +190,11 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `await failed`() {
-            val flow = flow<String> { IOException("test exception") }
+            val flow =
+                flow<String> {
+                    delay(10)
+                    IOException("test exception")
+                }
             backend.everyListen(flow)
             backend.everyCheckCount("countdownlatch:test", 3)
             val latch =
@@ -518,7 +522,11 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `quorum wasn't reach but await succeed`() {
-            val flow = flow<String> { IOException("test exception") }
+            val flow =
+                flow<String> {
+                    delay(10)
+                    IOException("test exception")
+                }
             val okFlow = flow { emit("open") }
             instances.forEach { backend ->
                 backend.everyCheckCount("countdownlatch:test", 1)
@@ -543,7 +551,11 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `all instances are down`() {
-            val flow = flow<String> { IOException("test exception") }
+            val flow =
+                flow<String> {
+                    delay(10)
+                    IOException("test exception")
+                }
             instances.forEach { backend ->
                 backend.everyCheckCount("countdownlatch:test", 1)
                 backend.everyListen(flow)
