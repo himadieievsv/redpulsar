@@ -19,9 +19,26 @@ Currently, RedPulsar supports Redis as a data storage. It can be used with both 
 - See [redpulsar-jedis](./redpulsar-jedis/README.md) module for details.
 - See [redpulsar-lettuce](./redpulsar-lettuce/README.md) module for details.
 
-## Usage 
+## Getting started 
+- See [redpulsar-jedis](./redpulsar-jedis/README.md#getting-started) for getting started with Jedis.
+- See [redpulsar-lettuce](./redpulsar-lettuce/README.md#getting-started) for getting started with Lettuce.
 
-TBD
+### Development
+To build RedPulsar locally, you need to have JDK 11+ installed.
+To build or test RedPulsar, run the following command:
+```bash
+git clone git@github.com:himadieievsv/redpulsar.git
+cd redpulsar
+# Run all tests
+docker-compose up -d
+./gradlew test 
+# Run only unit tests
+./gradlew test -DexcludeTags="integration"
+# Build
+./gradlew build
+# Code formatting
+./gradlew ktlintFormat
+```
 
 ## Further development 
 
