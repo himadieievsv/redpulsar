@@ -4,19 +4,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import me.himadieiev.redpulsar.core.locks.abstracts.AbstractLock
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
+import java.time.Duration
 
 /**
  * A distributed lock implementation that using only single Redis Cluster or Redis instance.
  */
 class SimpleLock(
     private val backend: LocksBackend,
-    private val retryDelay: Duration = 100.milliseconds,
+    private val retryDelay: Duration = Duration.ofMillis(100),
     private val retryCount: Int = 3,
 ) : AbstractLock() {
     init {
-        require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
+        require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
@@ -28,14 +27,14 @@ class SimpleLock(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        require(ttl > 2.milliseconds) { "Timeout is too small." }
+        require(ttl.toMillis() > 2) { "Timeout is too small." }
         var retries = retryCount
         do {
             if (lockInstance(backend, resourceName, ttl)) {
                 return true
             }
             runBlocking {
-                delay(retryDelay.inWholeMilliseconds)
+                delay(retryDelay.toMillis())
             }
         } while (--retries > 0)
         return false

@@ -7,10 +7,10 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.system.measureTimeMillis
-import kotlin.time.Duration
 
 /**
  * A distributed lock implementation based on the Redlock algorithm.
@@ -41,7 +41,7 @@ abstract class AbstractMultyInstanceLock(
         retryCount: Int,
         retryDelay: Duration,
     ): Boolean {
-        val clockDrift = (ttl.inWholeMilliseconds * 0.01 + defaultDrift.inWholeMilliseconds).toInt()
+        val clockDrift = (ttl.toMillis() * 0.01 + defaultDrift.toMillis()).toInt()
         var retries = retryCount
         do {
             val acceptedLocks = AtomicInteger(0)
@@ -51,7 +51,7 @@ abstract class AbstractMultyInstanceLock(
                         if (lockInstance(backend, resourceName, ttl)) acceptedLocks.incrementAndGet()
                     }
                 }
-            val validity = ttl.inWholeMilliseconds - timeDiff - clockDrift
+            val validity = ttl.toMillis() - timeDiff - clockDrift
             if (acceptedLocks.get() >= quorum && validity > 0) {
                 return true
             } else {
@@ -60,7 +60,7 @@ abstract class AbstractMultyInstanceLock(
                 }
             }
             runBlocking {
-                delay(retryDelay.inWholeMilliseconds)
+                delay(retryDelay.toMillis())
             }
         } while (--retries > 0)
         return false

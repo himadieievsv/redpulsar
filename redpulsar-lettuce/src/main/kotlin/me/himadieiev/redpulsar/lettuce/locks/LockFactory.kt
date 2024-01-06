@@ -10,9 +10,7 @@ import me.himadieiev.redpulsar.lettuce.LettucePooled
 import me.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import me.himadieiev.redpulsar.lettuce.locks.backends.LettuceCountDownLatchBackend
 import me.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
+import java.time.Duration
 
 /**
  * A factory for creating lock instances.
@@ -29,7 +27,7 @@ class LockFactory {
         @JvmStatic
         fun createSimpleLock(
             client: LettucePooled<String, String>,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
         ): SimpleLock {
             return SimpleLock(LettuceLocksBackend(client), retryDelay, retryCount)
@@ -46,7 +44,7 @@ class LockFactory {
         @JvmStatic
         fun createRedLock(
             clients: List<LettucePooled<String, String>>,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
             scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): RedLock {
@@ -67,7 +65,7 @@ class LockFactory {
         fun createSemaphore(
             clients: List<LettucePooled<String, String>>,
             maxLeases: Int,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
             scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): Semaphore {
@@ -90,9 +88,9 @@ class LockFactory {
             clients: List<LettucePubSubPooled<String, String>>,
             name: String,
             count: Int,
-            maxDuration: Duration = 5.minutes,
+            maxDuration: Duration = Duration.ofMinutes(10),
             retryCount: Int = 3,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
         ): ListeningCountDownLatch {
             val backends = clients.map { LettuceCountDownLatchBackend(it) }
             return ListeningCountDownLatch(name, count, backends, maxDuration, retryCount, retryDelay)

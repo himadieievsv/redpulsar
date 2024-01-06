@@ -26,7 +26,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.IOException
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class LettuceCountDownLatchBackendTest {
@@ -60,7 +60,8 @@ class LettuceCountDownLatchBackendTest {
                     eq("${clientId}0"), eq("5000"), eq("4"),
                 )
             } returns "OK"
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, 5.seconds)
+            val callResult =
+                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             Assertions.assertEquals("OK", callResult)
             verify(exactly = 1) {
@@ -79,7 +80,8 @@ class LettuceCountDownLatchBackendTest {
                     eq("${clientId}0"), eq("5000"), eq("4"),
                 )
             } throws IOException("test exception")
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, 5.seconds)
+            val callResult =
+                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             Assertions.assertNull(callResult)
             verify(exactly = 1) {

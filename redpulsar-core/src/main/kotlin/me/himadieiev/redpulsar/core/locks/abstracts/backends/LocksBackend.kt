@@ -1,7 +1,7 @@
 package me.himadieiev.redpulsar.core.locks.abstracts.backends
 
 import me.himadieiev.redpulsar.core.locks.abstracts.Backend
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * An abstraction for underlying storage for distributed locks.

@@ -13,12 +13,10 @@ import me.himadieiev.redpulsar.core.locks.api.CountDownLatch
 import me.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
 import me.himadieiev.redpulsar.core.locks.excecutors.waitAnyJobs
 import me.himadieiev.redpulsar.core.utils.failsafe
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * A distributed locking mechanics, intended for synchronization of multiple workloads distributed across cloud.
@@ -30,23 +28,23 @@ class ListeningCountDownLatch(
     private val name: String,
     private val count: Int,
     private val backends: List<CountDownLatchBackend>,
-    private val maxDuration: Duration = 5.minutes,
+    private val maxDuration: Duration = Duration.ofMinutes(5),
     private val retryCount: Int = 3,
-    private val retryDelay: Duration = 100.milliseconds,
+    private val retryDelay: Duration = Duration.ofMillis(100),
 ) : CountDownLatch {
     private val scope: CoroutineScope = CoroutineScope(CoroutineName("listeningCountDownLatch") + Dispatchers.IO)
     private val clientId: String = UUID.randomUUID().toString()
     private val keySpace = "countdownlatch"
     private val channelSpace = "channels"
     private val currentCounter = AtomicInteger(count)
-    private val minimalMaxDuration = 100.milliseconds
+    private val minimalMaxDuration = Duration.ofMillis(100)
 
     init {
         require(backends.isNotEmpty()) { "Backend instances must not be empty" }
         require(count > 0) { "Count must be positive" }
         require(name.isNotBlank()) { "Name must not be blank" }
         require(maxDuration > minimalMaxDuration) { "Max duration must be greater that 0.1 second" }
-        require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
+        require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
@@ -85,7 +83,7 @@ class ListeningCountDownLatch(
         require(timeout > minimalMaxDuration) { "Timeout must be greater that [minimalMaxDuration]" }
         val job =
             scope.async {
-                withTimeout(timeout.inWholeMilliseconds) {
+                withTimeout(timeout.toMillis()) {
                     val globalCount = getCount(this)
                     if (globalCount == Int.MIN_VALUE) return@withTimeout CallResult.FAILED
                     // Open latch if internal counter or global one is already 0 or less
@@ -149,7 +147,7 @@ class ListeningCountDownLatch(
                 clientId = clientId,
                 count = currentCounter.get(),
                 initialCount = count,
-                ttl = maxDuration * 2,
+                ttl = maxDuration.multipliedBy(2),
             )
         }
     }
@@ -172,7 +170,7 @@ class ListeningCountDownLatch(
     private fun checkCount(scope: CoroutineScope): List<Long?> {
         return backends.executeWithRetry(
             scope = scope,
-            timeout = maxDuration * 2,
+            timeout = maxDuration.multipliedBy(2),
             retryCount = retryCount,
             retryDelay = retryDelay,
         ) { backend ->

@@ -12,9 +12,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.Duration
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.UNIT)
 class MultyInstanceExecutorTest {
@@ -37,7 +36,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -61,7 +60,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -85,7 +84,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()
@@ -105,7 +104,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 waiter = ::waitAnyJobs,
             ) { backend -> backend.test() }
 
@@ -124,7 +123,7 @@ class MultyInstanceExecutorTest {
             multyInstanceExecute(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 waiter = ::waitAnyJobs,
             ) { backend -> backend.test() }
 
@@ -146,9 +145,9 @@ class MultyInstanceExecutorTest {
             multyInstanceExecuteWithRetry(
                 backends = backends,
                 scope = scope,
-                timeout = 1.seconds,
+                timeout = Duration.ofSeconds(1),
                 retryCount = 3,
-                retryDelay = 1.milliseconds,
+                retryDelay = Duration.ofMillis(1),
                 waiter = ::waitAllJobs,
             ) { backend ->
                 backend.test()

@@ -22,9 +22,8 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.IOException
+import java.time.Duration
 import java.util.concurrent.CancellationException
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.UNIT)
 class ListeningCountDownLatchTest {
@@ -39,15 +38,15 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `count down`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 3, 4, "OK")
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 4, "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, returnVal = "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 3, 4, returnVal = "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 4, returnVal = "OK")
             val latch =
                 ListeningCountDownLatch(
                     "test",
                     4,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                 )
             repeat(3) { assertEquals(CallResult.SUCCESS, latch.countDown()) }
 
@@ -57,16 +56,16 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `count down failing`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, null)
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, returnVal = null)
             backend.everyUndoCount("countdownlatch:test", 2, 1)
             val latch =
                 ListeningCountDownLatch(
                     "test",
                     2,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                     retryCount = 4,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             repeat(2) { assertEquals(CallResult.FAILED, latch.countDown()) }
 
@@ -76,16 +75,16 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `undo count failing`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, null)
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, returnVal = null)
             backend.everyUndoCount("countdownlatch:test", 2, null)
             val latch =
                 ListeningCountDownLatch(
                     "test",
                     2,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                     retryCount = 6,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             repeat(2) { assertEquals(CallResult.FAILED, latch.countDown()) }
 
@@ -103,7 +102,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                 )
 
             assertEquals(CallResult.SUCCESS, latch.await())
@@ -122,7 +121,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                 )
 
             assertEquals(CallResult.SUCCESS, latch.await())
@@ -143,9 +142,9 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                     retryCount = 2,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
 
             assertEquals(CallResult.FAILED, latch.await())
@@ -181,7 +180,7 @@ class ListeningCountDownLatchTest {
             backend.everyCheckCount("countdownlatch:test", 2)
             val latch = ListeningCountDownLatch("test", 4, listOf(backend))
 
-            assertEquals(CallResult.FAILED, latch.await(110.milliseconds))
+            assertEquals(CallResult.FAILED, latch.await(Duration.ofMillis(110)))
             verify(exactly = 1) {
                 backend.checkCount(any())
                 backend.listen(any())
@@ -202,9 +201,9 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     listOf(backend),
-                    maxDuration = 10.seconds,
+                    maxDuration = Duration.ofSeconds(10),
                     retryCount = 5,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
 
             assertEquals(CallResult.FAILED, latch.await())
@@ -223,7 +222,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     listOf(backend),
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
 
             assertEquals(CallResult.FAILED, latch.await())
@@ -252,7 +251,7 @@ class ListeningCountDownLatchTest {
                     4,
                     listOf(backend),
                     retryCount = 8,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
 
             assertEquals(Int.MIN_VALUE, latch.getCount())
@@ -286,14 +285,14 @@ class ListeningCountDownLatchTest {
 
         @ParameterizedTest(name = "Validated with retry delay - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate retry delay`(retryDelay: Int) {
+        fun `validate retry delay`(retryDelay: Long) {
             if (retryDelay > 0) {
                 assertDoesNotThrow {
                     ListeningCountDownLatch(
                         "test",
                         3,
                         listOf(backend),
-                        retryDelay = retryDelay.milliseconds,
+                        retryDelay = Duration.ofMillis(retryDelay),
                     )
                 }
             } else {
@@ -302,7 +301,7 @@ class ListeningCountDownLatchTest {
                         "test",
                         3,
                         listOf(backend),
-                        retryDelay = retryDelay.milliseconds,
+                        retryDelay = Duration.ofMillis(retryDelay),
                     )
                 }
             }
@@ -368,14 +367,14 @@ class ListeningCountDownLatchTest {
 
         @ParameterizedTest(name = "Validated with max duration - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 10, 100, 101, 1000])
-        fun `validate max duration`(maxDuration: Int) {
+        fun `validate max duration`(maxDuration: Long) {
             if (maxDuration > 100) {
                 assertDoesNotThrow {
                     ListeningCountDownLatch(
                         "test",
                         3,
                         listOf(backend),
-                        maxDuration = maxDuration.milliseconds,
+                        maxDuration = Duration.ofMillis(maxDuration),
                     )
                 }
             } else {
@@ -384,7 +383,7 @@ class ListeningCountDownLatchTest {
                         "test",
                         3,
                         listOf(backend),
-                        maxDuration = maxDuration.milliseconds,
+                        maxDuration = Duration.ofMillis(maxDuration),
                     )
                 }
             }
@@ -409,14 +408,14 @@ class ListeningCountDownLatchTest {
         @Test
         fun `all instances are in quorum for count down`() {
             instances.forEach { backend ->
-                backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+                backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), "OK")
             }
             val latch =
                 ListeningCountDownLatch(
                     "test",
                     4,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.SUCCESS, latch.countDown())
 
@@ -428,15 +427,15 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `two instances are in quorum for count down`() {
-            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
-            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), "OK")
+            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), null)
+            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), "OK")
             val latch =
                 ListeningCountDownLatch(
                     "test",
                     4,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.SUCCESS, latch.countDown())
 
@@ -448,9 +447,9 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `quorum wasn't reach for count down`() {
-            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), null)
+            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), null)
+            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), "OK")
             instances.forEach { backend ->
                 backend.everyUndoCount("countdownlatch:test", 4, 1)
             }
@@ -459,7 +458,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     4,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.FAILED, latch.countDown())
 
@@ -481,7 +480,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     2,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
@@ -510,7 +509,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     5,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
@@ -539,7 +538,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     3,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
@@ -565,7 +564,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     2,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(CallResult.FAILED, latch.await())
 
@@ -588,7 +587,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     2,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(1, latch.getCount())
 
@@ -606,7 +605,7 @@ class ListeningCountDownLatchTest {
                     "test",
                     2,
                     backends = instances,
-                    retryDelay = 1.milliseconds,
+                    retryDelay = Duration.ofMillis(1),
                 )
             assertEquals(Int.MIN_VALUE, latch.getCount())
 
@@ -619,6 +618,7 @@ class ListeningCountDownLatchTest {
         channelName: String,
         count: Int,
         initialCount: Int,
+        maxDuration: Duration = Duration.ofSeconds(20),
         returnVal: String?,
     ) {
         val backend = this
@@ -630,8 +630,7 @@ class ListeningCountDownLatchTest {
                 any(),
                 eq(count),
                 eq(initialCount),
-                // TODO 10.seconds * 2
-                any(),
+                eq(maxDuration),
             )
         } returns returnVal
     }

@@ -4,8 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import me.himadieiev.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
+import java.time.Duration
 
 /**
  * A distributed lock for single or multiple Redis instances / clusters.
@@ -15,11 +14,11 @@ import kotlin.time.Duration.Companion.milliseconds
 class RedLock(
     backends: List<LocksBackend>,
     private val retryCount: Int = 3,
-    private val retryDelay: Duration = 100.milliseconds,
+    private val retryDelay: Duration = Duration.ofMillis(100),
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) : AbstractMultyInstanceLock(backends, scope) {
     init {
-        require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
+        require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
@@ -31,7 +30,7 @@ class RedLock(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        require(ttl > 2.milliseconds) { "Timeout must be greater that min clock drift." }
-        return multyLock(resourceName, ttl, 2.milliseconds, retryCount, retryDelay)
+        require(ttl.toMillis() > 2) { "Timeout must be greater that min clock drift." }
+        return multyLock(resourceName, ttl, Duration.ofMillis(2), retryCount, retryDelay)
     }
 }

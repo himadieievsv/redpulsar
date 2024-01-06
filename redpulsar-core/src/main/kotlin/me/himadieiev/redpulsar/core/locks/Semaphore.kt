@@ -4,8 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import me.himadieiev.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
+import java.time.Duration
 
 /**
  * An implementation for Semaphore lock in distributed systems.
@@ -15,7 +14,7 @@ class Semaphore(
     backends: List<LocksBackend>,
     private val maxLeases: Int,
     private val retryCount: Int = 3,
-    private val retryDelay: Duration = 100.milliseconds,
+    private val retryDelay: Duration = Duration.ofMillis(100),
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) : AbstractMultyInstanceLock(backends, scope) {
     private val globalKeyPrefix = "semaphore"
@@ -23,7 +22,7 @@ class Semaphore(
 
     init {
         require(maxLeases > 0) { "Max leases should be positive number" }
-        require(retryDelay > 0.milliseconds) { "Retry delay must be positive" }
+        require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
     }
 
@@ -36,10 +35,9 @@ class Semaphore(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        val minTtl = 10.milliseconds
         // ttl is longer that other locks because process of acquiring lock is longer.
-        require(ttl > minTtl) { "Timeout is too small." }
-        return multyLock(resourceName, ttl, minTtl, retryCount, retryDelay)
+        require(ttl.toMillis() > 10) { "Timeout is too small." }
+        return multyLock(resourceName, ttl, Duration.ofMillis(10), retryCount, retryDelay)
     }
 
     override fun lockInstance(

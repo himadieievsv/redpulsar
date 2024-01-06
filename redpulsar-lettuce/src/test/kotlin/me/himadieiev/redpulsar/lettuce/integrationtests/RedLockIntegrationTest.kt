@@ -14,8 +14,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.INTEGRATIONS)
 class RedLockIntegrationTest {
@@ -32,7 +31,7 @@ class RedLockIntegrationTest {
     @Test
     fun `obtain lock`() {
         val redLock = RedLock(backends)
-        val permit = redLock.lock("test", 10.seconds)
+        val permit = redLock.lock("test", Duration.ofSeconds(10))
 
         assertTrue(permit)
 
@@ -43,7 +42,7 @@ class RedLockIntegrationTest {
     @Test
     fun `release lock`() {
         val redLock = RedLock(backends)
-        redLock.lock("test", 10.seconds)
+        redLock.lock("test", Duration.ofSeconds(10))
         redLock.unlock("test")
 
         instances.map { it.sync { redis -> redis.get("test") } }.forEach { assertNull(it) }
@@ -52,25 +51,25 @@ class RedLockIntegrationTest {
     @Test
     fun `another client can re-acquire lock`() {
         val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = 50.milliseconds)
+        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(50))
 
-        assertTrue(redLock.lock("test", 10.seconds))
-        assertFalse(redLock2.lock("test", 10.milliseconds))
+        assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
 
         redLock.unlock("test")
-        assertTrue(redLock2.lock("test", 10.milliseconds))
+        assertTrue(redLock2.lock("test", Duration.ofMillis(10)))
     }
 
     @Test
     fun `another client can re-acquire lock due to expiration`() {
         val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = 30.milliseconds)
+        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(30))
 
-        assertTrue(redLock.lock("test", 200.milliseconds))
-        assertFalse(redLock2.lock("test", 10.milliseconds))
+        assertTrue(redLock.lock("test", Duration.ofMillis(200)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
 
         runBlocking { delay(200) }
-        assertTrue(redLock2.lock("test", 10.milliseconds))
+        assertTrue(redLock2.lock("test", Duration.ofMillis(10)))
     }
 
     @Test
@@ -78,7 +77,7 @@ class RedLockIntegrationTest {
         val redLock = RedLock(backends)
         val redLock2 = RedLock(backends)
 
-        assertTrue(redLock.lock("test", 10.seconds))
-        assertFalse(redLock2.lock("test", 10.milliseconds))
+        assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
     }
 }

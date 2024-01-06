@@ -12,7 +12,7 @@ Creating lock:
 ```kotlin
 // Create lock
 val lock = LockFactory.createSimpleLock(client)
-lock.lock("myResource", 1.seconds)
+lock.lock("myResource", Duration.ofSeconds(1))
 // do something
 lock.unlock("myResource")
 ```

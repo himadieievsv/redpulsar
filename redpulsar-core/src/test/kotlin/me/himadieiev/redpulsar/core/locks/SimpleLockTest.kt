@@ -14,8 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class SimpleLockTest {
@@ -28,11 +27,11 @@ class SimpleLockTest {
 
     @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
     @ValueSource(ints = [1, 2, 5, 7, 10])
-    fun `lock acquired`(ttl: Int) {
-        every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+    fun `lock acquired`(ttl: Long) {
+        every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(ttl))) } returns "OK"
 
         val simpleLock = SimpleLock(backend)
-        val permit = simpleLock.lock("test", ttl.seconds)
+        val permit = simpleLock.lock("test", Duration.ofSeconds(ttl))
 
         assertTrue(permit)
         verify(exactly = 1) {
@@ -43,10 +42,10 @@ class SimpleLockTest {
     @Test
     fun `lock already taken or instance is down`() {
         // every { redis.set(eq("test"), any(), any()) } returns null
-        every { backend.setLock(eq("test"), any(), any()) } returns null
+        every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(1))) } returns null
 
-        val simpleLock = SimpleLock(backend, retryDelay = 20.milliseconds, retryCount = 3)
-        val permit = simpleLock.lock("test", 1.seconds)
+        val simpleLock = SimpleLock(backend, retryDelay = Duration.ofMillis(20), retryCount = 3)
+        val permit = simpleLock.lock("test", Duration.ofSeconds(1))
 
         assertFalse(permit)
 
@@ -80,24 +79,24 @@ class SimpleLockTest {
 
     @ParameterizedTest(name = "Validated with retry delay - {0}")
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-    fun `validate retry delay`(retryDelay: Int) {
+    fun `validate retry delay`(retryDelay: Long) {
         if (retryDelay > 0) {
-            assertDoesNotThrow { SimpleLock(backend, retryDelay = retryDelay.milliseconds) }
+            assertDoesNotThrow { SimpleLock(backend, retryDelay = Duration.ofMillis(retryDelay)) }
         } else {
-            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryDelay = retryDelay.milliseconds) }
+            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryDelay = Duration.ofMillis(retryDelay)) }
         }
     }
 
     @ParameterizedTest(name = "lock acquired with ttl - {0}")
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-    fun `validate ttl`(ttl: Int) {
+    fun `validate ttl`(ttl: Long) {
         every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
         val simpleLock = SimpleLock(backend)
         if (ttl > 2) {
-            assertDoesNotThrow { simpleLock.lock("test", ttl.milliseconds) }
+            assertDoesNotThrow { simpleLock.lock("test", Duration.ofMillis(ttl)) }
         } else {
-            assertThrows<IllegalArgumentException> { simpleLock.lock("test", ttl.milliseconds) }
+            assertThrows<IllegalArgumentException> { simpleLock.lock("test", Duration.ofMillis(ttl)) }
         }
     }
 }

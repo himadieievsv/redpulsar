@@ -9,7 +9,7 @@ import me.himadieiev.redpulsar.core.utils.failsafe
 import mu.KotlinLogging
 import redis.clients.jedis.JedisPubSub
 import redis.clients.jedis.UnifiedJedis
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * An implementation of [CountDownLatchBackend] that uses Redis as a storage.
@@ -42,7 +42,7 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
                 jedis.eval(
                     luaScript,
                     listOf(latchKeyName, channelName),
-                    listOf("$clientId$count", ttl.inWholeMilliseconds.toString(), initialCount.toString()),
+                    listOf("$clientId$count", ttl.toMillis().toString(), initialCount.toString()),
                 ),
             )
         }

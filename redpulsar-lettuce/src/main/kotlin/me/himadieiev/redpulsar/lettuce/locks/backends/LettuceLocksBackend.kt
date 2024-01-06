@@ -5,7 +5,7 @@ import io.lettuce.core.SetArgs
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import me.himadieiev.redpulsar.core.utils.failsafe
 import me.himadieiev.redpulsar.lettuce.LettucePooled
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * An implementation of [LocksBackend] that uses Redis as a storage.
@@ -16,7 +16,7 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
         clientId: String,
         ttl: Duration,
     ): String? {
-        val args = SetArgs().nx().px(ttl.inWholeMilliseconds)
+        val args = SetArgs().nx().px(ttl.toMillis())
         return failsafe(null) {
             redis.sync { sync -> sync.set(resourceName, clientId, args) }
         }
@@ -67,7 +67,7 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
                         arrayOf(leasersKey, leaserValidityKey),
                         clientId,
                         maxLeases.toString(),
-                        ttl.inWholeMilliseconds.toString(),
+                        ttl.toMillis().toString(),
                     )
                 },
             )

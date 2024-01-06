@@ -3,13 +3,13 @@ package me.himadieiev.redpulsar.lettuce.locks
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 class LockFactoryTest {
     @Test
     fun createSimpleLock() {
         assertThrows<IllegalArgumentException> {
-            LockFactory.createSimpleLock(client = mockk(), retryDelay = 0.seconds)
+            LockFactory.createSimpleLock(client = mockk(), retryDelay = Duration.ofSeconds(0))
         }
         assertThrows<IllegalArgumentException> {
             LockFactory.createSimpleLock(client = mockk(), retryCount = -1)
@@ -22,7 +22,7 @@ class LockFactoryTest {
             LockFactory.createRedLock(clients = listOf())
         }
         assertThrows<IllegalArgumentException> {
-            LockFactory.createRedLock(clients = listOf(mockk()), retryDelay = 0.seconds)
+            LockFactory.createRedLock(clients = listOf(mockk()), retryDelay = Duration.ofSeconds(0))
         }
         assertThrows<IllegalArgumentException> {
             LockFactory.createRedLock(clients = listOf(mockk()), retryCount = -1)
@@ -38,7 +38,7 @@ class LockFactoryTest {
             LockFactory.createSemaphore(clients = listOf(mockk()), maxLeases = 0)
         }
         assertThrows<IllegalArgumentException> {
-            LockFactory.createSemaphore(clients = listOf(mockk()), maxLeases = 3, retryDelay = 0.seconds)
+            LockFactory.createSemaphore(clients = listOf(mockk()), maxLeases = 3, retryDelay = Duration.ofSeconds(0))
         }
         assertThrows<IllegalArgumentException> {
             LockFactory.createSemaphore(clients = listOf(mockk()), maxLeases = 3, retryCount = 0)
@@ -61,7 +61,7 @@ class LockFactoryTest {
                 clients = listOf(mockk()),
                 name = "test",
                 count = 3,
-                retryDelay = 0.seconds,
+                retryDelay = Duration.ofSeconds(0),
             )
         }
         assertThrows<IllegalArgumentException> {
@@ -77,7 +77,7 @@ class LockFactoryTest {
                 clients = listOf(mockk()),
                 name = "test",
                 count = 3,
-                maxDuration = 0.seconds,
+                maxDuration = Duration.ofSeconds(0),
             )
         }
     }
