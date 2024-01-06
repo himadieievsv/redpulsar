@@ -7,10 +7,9 @@ import kotlinx.coroutines.runBlocking
 import me.himadieiev.redpulsar.core.locks.abstracts.Backend
 import me.himadieiev.redpulsar.core.utils.withRetry
 import me.himadieiev.redpulsar.core.utils.withTimeoutInThread
+import java.time.Duration
 import java.util.Collections
 import kotlin.system.measureTimeMillis
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * An algorithm for running closure on multiple remote instances proxied by [backends].
@@ -27,14 +26,14 @@ inline fun <T : Backend, R> multyInstanceExecute(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
-    defaultDrift: Duration = 3.milliseconds,
+    defaultDrift: Duration = Duration.ofMillis(3),
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     val jobs = mutableListOf<Job>()
     val quorum: Int = backends.size / 2 + 1
     val results = Collections.synchronizedList(mutableListOf<R>())
-    val clockDrift = (timeout.inWholeMilliseconds * 0.01).toLong() + defaultDrift.inWholeMilliseconds
+    val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
     val timeDiff =
         measureTimeMillis {
             backends.forEach { backend ->
@@ -49,7 +48,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
             }
             runBlocking(scope.coroutineContext) { waiter(jobs, results) }
         }
-    val validity = timeout.inWholeMilliseconds - timeDiff - clockDrift
+    val validity = timeout.toMillis() - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
         return emptyList()
     }
@@ -60,9 +59,9 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
-    defaultDrift: Duration = 3.milliseconds,
+    defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
-    retryDelay: Duration = 100.milliseconds,
+    retryDelay: Duration = Duration.ofMillis(100),
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -81,9 +80,9 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
 fun <T : Backend, R> List<T>.executeWithRetry(
     scope: CoroutineScope,
     timeout: Duration,
-    defaultDrift: Duration = 3.milliseconds,
+    defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
-    retryDelay: Duration = 100.milliseconds,
+    retryDelay: Duration = Duration.ofMillis(100),
     waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     callee: suspend (backend: T) -> R,
 ): List<R> {

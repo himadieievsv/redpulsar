@@ -3,8 +3,8 @@ package me.himadieiev.redpulsar.core.locks.abstracts
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import me.himadieiev.redpulsar.core.locks.api.Lock
 import mu.KotlinLogging
+import java.time.Duration
 import java.util.UUID
-import kotlin.time.Duration
 
 /**
  * Common functions for broad range of different locks.

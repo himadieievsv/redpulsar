@@ -6,9 +6,8 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.Duration
 import kotlin.system.measureTimeMillis
-import kotlin.time.Duration.Companion.microseconds
-import kotlin.time.Duration.Companion.milliseconds
 
 @Tag(TestTags.UNIT)
 class WithRetryTest {
@@ -16,7 +15,7 @@ class WithRetryTest {
     fun `doesn't retry`() {
         var counter = 0
         val returnVal =
-            withRetry(3, 1.milliseconds) {
+            withRetry(3, Duration.ofMillis(1)) {
                 counter++
                 listOf("OK")
             }
@@ -30,7 +29,7 @@ class WithRetryTest {
     fun `check retry count`(withCount: Int) {
         var counter = 0
         val returnVal =
-            withRetry(withCount, 1.microseconds) {
+            withRetry(withCount, Duration.ofNanos(1000)) {
                 counter++
                 emptyList<Int>()
             }
@@ -46,7 +45,7 @@ class WithRetryTest {
     fun `retry with negative delay is ignored`() {
         var counter = 0
         val returnVal =
-            withRetry(3, (-1).milliseconds) {
+            withRetry(3, Duration.ofNanos(0)) {
                 counter++
                 emptyList<Int>()
             }
@@ -60,7 +59,7 @@ class WithRetryTest {
         val time =
             measureTimeMillis {
                 val returnVal =
-                    withRetry(4, 50.milliseconds) {
+                    withRetry(4, Duration.ofMillis(50)) {
                         counter++
                         emptyList<Int>()
                     }

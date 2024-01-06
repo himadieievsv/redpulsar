@@ -9,9 +9,7 @@ import me.himadieiev.redpulsar.core.locks.SimpleLock
 import me.himadieiev.redpulsar.jedis.locks.backends.JedisCountDownLatchBackend
 import me.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
 import redis.clients.jedis.UnifiedJedis
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
+import java.time.Duration
 
 /**
  * A factory for creating lock instances.
@@ -27,7 +25,7 @@ interface LockFactory {
          */
         fun createSimpleLock(
             client: UnifiedJedis,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
         ): SimpleLock {
             return SimpleLock(JedisLocksBackend(client), retryDelay, retryCount)
@@ -43,7 +41,7 @@ interface LockFactory {
          */
         fun createRedLock(
             clients: List<UnifiedJedis>,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
             scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): RedLock {
@@ -63,7 +61,7 @@ interface LockFactory {
         fun createSemaphore(
             clients: List<UnifiedJedis>,
             maxLeases: Int,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
             scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): Semaphore {
@@ -85,9 +83,9 @@ interface LockFactory {
             clients: List<UnifiedJedis>,
             name: String,
             count: Int,
-            maxDuration: Duration = 5.minutes,
+            maxDuration: Duration = Duration.ofMinutes(5),
             retryCount: Int = 3,
-            retryDelay: Duration = 100.milliseconds,
+            retryDelay: Duration = Duration.ofMillis(100),
         ): ListeningCountDownLatch {
             val backends = clients.map { JedisCountDownLatchBackend(it) }
             return ListeningCountDownLatch(name, count, backends, maxDuration, retryCount, retryDelay)

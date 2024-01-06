@@ -1,6 +1,6 @@
 package me.himadieiev.redpulsar.core.locks.api
 
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * A distributed locking mechanics, intended for synchronization of multiple workloads distributed across cloud.

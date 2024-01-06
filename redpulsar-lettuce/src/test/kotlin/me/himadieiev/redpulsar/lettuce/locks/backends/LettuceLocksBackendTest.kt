@@ -17,8 +17,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.io.IOException
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class LettuceLocksBackendTest {
@@ -48,17 +47,17 @@ class LettuceLocksBackendTest {
                 sync.set(
                     eq("test"),
                     eq(clientId),
-                    match { it.equalsTo(SetArgs().nx().px(5.seconds.inWholeMilliseconds)) },
+                    match { it.equalsTo(SetArgs().nx().px(Duration.ofSeconds(5).toMillis())) },
                 )
             } returns "OK"
-            val permit = backend.setLock("test", clientId, 5.seconds)
+            val permit = backend.setLock("test", clientId, Duration.ofSeconds(5))
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
                 sync.set(
                     eq("test"),
                     eq(clientId),
-                    match { it.equalsTo(SetArgs().nx().px(5.seconds.inWholeMilliseconds)) },
+                    match { it.equalsTo(SetArgs().nx().px(Duration.ofSeconds(5).toMillis())) },
                 )
             }
         }
@@ -70,10 +69,10 @@ class LettuceLocksBackendTest {
                 sync.set(
                     eq("test"),
                     eq(clientId),
-                    match { it.equalsTo(SetArgs().nx().px(10.seconds.inWholeMilliseconds)) },
+                    match { it.equalsTo(SetArgs().nx().px(Duration.ofSeconds(10).toMillis())) },
                 )
             } returns null
-            val permit = backend.setLock("test", clientId, 10.seconds)
+            val permit = backend.setLock("test", clientId, Duration.ofSeconds(10))
 
             assertNull(permit)
         }
@@ -85,10 +84,10 @@ class LettuceLocksBackendTest {
                 sync.set(
                     eq("test"),
                     eq(clientId),
-                    match { it.equalsTo(SetArgs().nx().px(200.milliseconds.inWholeMilliseconds)) },
+                    match { it.equalsTo(SetArgs().nx().px(200)) },
                 )
             } throws IOException("test exception")
-            val permit = backend.setLock("test", clientId, 200.milliseconds)
+            val permit = backend.setLock("test", clientId, Duration.ofMillis(200))
 
             assertNull(permit)
         }
@@ -151,7 +150,7 @@ class LettuceLocksBackendTest {
                     eq("5000"),
                 )
             } returns "OK"
-            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 4, 5.seconds)
+            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
@@ -179,7 +178,7 @@ class LettuceLocksBackendTest {
                     eq("5000"),
                 )
             } returns null
-            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 4, 5.seconds)
+            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertNull(permit)
             verify(exactly = 1) {
@@ -207,7 +206,7 @@ class LettuceLocksBackendTest {
                     eq("100"),
                 )
             } throws IOException("test exception")
-            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 10, 100.milliseconds)
+            val permit = backend.setSemaphoreLock("test-key1", "test-key2", clientId, 10, Duration.ofMillis(100))
 
             assertNull(permit)
             verify(exactly = 1) {

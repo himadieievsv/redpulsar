@@ -1,7 +1,6 @@
 package me.himadieiev.redpulsar.core.locks.api
 
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 /**
  * A distributed lock api. It is a simple interface that allows to lock and unlock a resource.
@@ -16,7 +15,7 @@ interface Lock {
      */
     fun lock(
         resourceName: String,
-        ttl: Duration = 10.seconds,
+        ttl: Duration = Duration.ofSeconds(10),
     ): Boolean
 
     /**

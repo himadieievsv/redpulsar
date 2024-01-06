@@ -14,8 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class SemaphoreTest {
@@ -30,7 +29,7 @@ class SemaphoreTest {
 
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
         @ValueSource(ints = [1, 2, 5, 7, 10])
-        fun `lock acquired`(ttl: Int) {
+        fun `lock acquired`(ttl: Long) {
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -42,7 +41,7 @@ class SemaphoreTest {
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
-            val permit = semaphore.lock("test", ttl.seconds)
+            val permit = semaphore.lock("test", Duration.ofSeconds(ttl))
 
             assertTrue(permit)
             verify(exactly = 1) {
@@ -84,8 +83,8 @@ class SemaphoreTest {
                 )
             } returns "OK"
 
-            val semaphore = Semaphore(listOf(backend), 3, 4, 15.milliseconds)
-            val permit = semaphore.lock("test", 1.seconds)
+            val semaphore = Semaphore(listOf(backend), 3, 4, Duration.ofMillis(15))
+            val permit = semaphore.lock("test", Duration.ofSeconds(1))
 
             assertFalse(permit)
 
@@ -154,15 +153,21 @@ class SemaphoreTest {
 
         @ParameterizedTest(name = "Validated with retry delay - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate retry delay`(retryDelay: Int) {
+        fun `validate retry delay`(retryDelay: Long) {
             if (retryDelay > 0) {
-                Assertions.assertDoesNotThrow { Semaphore(listOf(backend), 3, retryDelay = retryDelay.milliseconds) }
+                Assertions.assertDoesNotThrow {
+                    Semaphore(
+                        listOf(backend),
+                        3,
+                        retryDelay = Duration.ofMillis(retryDelay),
+                    )
+                }
             } else {
                 assertThrows<IllegalArgumentException> {
                     Semaphore(
                         listOf(backend),
                         3,
-                        retryDelay = retryDelay.milliseconds,
+                        retryDelay = Duration.ofMillis(retryDelay),
                     )
                 }
             }
@@ -186,7 +191,7 @@ class SemaphoreTest {
 
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 10, 11, 12, 20, 40])
-        fun `validate ttl`(ttl: Int) {
+        fun `validate ttl`(ttl: Long) {
             every {
                 backend.setSemaphoreLock(
                     eq("semaphore:leasers:test"),
@@ -199,9 +204,9 @@ class SemaphoreTest {
 
             val semaphore = Semaphore(listOf(backend), 3)
             if (ttl > 10) {
-                Assertions.assertDoesNotThrow { semaphore.lock("test", ttl.milliseconds) }
+                Assertions.assertDoesNotThrow { semaphore.lock("test", Duration.ofMillis(ttl)) }
             } else {
-                assertThrows<IllegalArgumentException> { semaphore.lock("test", ttl.milliseconds) }
+                assertThrows<IllegalArgumentException> { semaphore.lock("test", Duration.ofMillis(ttl)) }
             }
         }
     }
@@ -354,7 +359,7 @@ class SemaphoreTest {
                 } returns "OK"
             }
 
-            val semaphore = Semaphore(instances, 3, 3, 20.milliseconds)
+            val semaphore = Semaphore(instances, 3, 3, Duration.ofMillis(20))
             val permit = semaphore.lock("test")
 
             assertFalse(permit)

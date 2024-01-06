@@ -15,8 +15,7 @@ import redis.clients.jedis.Pipeline
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
 import java.io.IOException
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class JedisLocksBackendTest {
@@ -38,12 +37,12 @@ class JedisLocksBackendTest {
                 redis.set(
                     eq("test"), eq(clientId),
                     match<SetParams> {
-                        it.equalsTo(SetParams().nx().px(5.seconds.inWholeMilliseconds))
+                        it.equalsTo(SetParams().nx().px(Duration.ofSeconds(5).toMillis()))
                     },
                 )
             } returns "OK"
 
-            val permit = lock.setLock("test", clientId, 5.seconds)
+            val permit = lock.setLock("test", clientId, Duration.ofSeconds(5))
 
             assertEquals("OK", permit)
 
@@ -52,7 +51,7 @@ class JedisLocksBackendTest {
                     eq("test"),
                     eq(clientId),
                     match<SetParams> {
-                        it.equalsTo(SetParams().nx().px(5.seconds.inWholeMilliseconds))
+                        it.equalsTo(SetParams().nx().px(Duration.ofSeconds(5).toMillis()))
                     },
                 )
             }
@@ -65,12 +64,12 @@ class JedisLocksBackendTest {
                 redis.set(
                     eq("test"), eq(clientId),
                     match<SetParams> {
-                        it.equalsTo(SetParams().nx().px(10.seconds.inWholeMilliseconds))
+                        it.equalsTo(SetParams().nx().px(Duration.ofSeconds(10).toMillis()))
                     },
                 )
             } returns null
 
-            val permit = lock.setLock("test", clientId, 10.seconds)
+            val permit = lock.setLock("test", clientId, Duration.ofSeconds(10))
 
             assertNull(permit)
         }
@@ -82,11 +81,11 @@ class JedisLocksBackendTest {
                 redis.set(
                     eq("test"), eq(clientId),
                     match<SetParams> {
-                        it.equalsTo(SetParams().nx().px(200.milliseconds.inWholeMilliseconds))
+                        it.equalsTo(SetParams().nx().px(200))
                     },
                 )
             } throws IOException("test exception")
-            val permit = lock.setLock("test", clientId, 200.milliseconds)
+            val permit = lock.setLock("test", clientId, Duration.ofMillis(200))
 
             assertNull(permit)
         }
@@ -136,7 +135,7 @@ class JedisLocksBackendTest {
             every {
                 redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             } returns "OK"
-            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, 5.seconds)
+            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
@@ -150,7 +149,7 @@ class JedisLocksBackendTest {
             every {
                 redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             } returns null
-            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, 5.seconds)
+            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertNull(permit)
             verify(exactly = 1) {
@@ -164,7 +163,7 @@ class JedisLocksBackendTest {
             every {
                 redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
             } throws IOException("test exception")
-            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 10, 100.milliseconds)
+            val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 10, Duration.ofMillis(100))
 
             assertNull(permit)
             verify(exactly = 1) {

@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import me.himadieiev.redpulsar.core.utils.failsafe
 import me.himadieiev.redpulsar.lettuce.LettucePubSubPooled
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * An implementation of [CountDownLatchBackend] that uses Redis as a storage.
@@ -50,7 +50,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
                         ScriptOutputType.STATUS,
                         arrayOf(latchKeyName, channelName),
                         "$clientId$count",
-                        ttl.inWholeMilliseconds.toString(),
+                        ttl.toMillis().toString(),
                         initialCount.toString(),
                     )
                 },

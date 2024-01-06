@@ -24,7 +24,7 @@ import redis.clients.jedis.JedisPubSub
 import redis.clients.jedis.UnifiedJedis
 import java.io.IOException
 import java.lang.Thread.sleep
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class JedisCountDownLatchBackendTest {
@@ -49,7 +49,7 @@ class JedisCountDownLatchBackendTest {
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } returns "OK"
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, 5.seconds)
+            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", callResult)
             verify(exactly = 1) {
@@ -67,7 +67,7 @@ class JedisCountDownLatchBackendTest {
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } throws IOException("test exception")
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, 5.seconds)
+            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertNull(callResult)
             verify(exactly = 1) {

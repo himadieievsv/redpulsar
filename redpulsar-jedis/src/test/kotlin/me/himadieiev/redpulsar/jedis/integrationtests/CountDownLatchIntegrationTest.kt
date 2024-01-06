@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import redis.clients.jedis.UnifiedJedis
+import java.time.Duration
 import kotlin.system.measureTimeMillis
-import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
 class CountDownLatchIntegrationTest {
@@ -88,7 +88,7 @@ class CountDownLatchIntegrationTest {
 
         val time =
             measureTimeMillis {
-                assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
+                assertEquals(CallResult.FAILED, waitingLatch.await(Duration.ofSeconds(1)))
             }
         assertFalse(time < 1000)
     }
@@ -104,7 +104,7 @@ class CountDownLatchIntegrationTest {
 
         val time =
             measureTimeMillis {
-                assertEquals(CallResult.FAILED, waitingLatch.await(1.seconds))
+                assertEquals(CallResult.FAILED, waitingLatch.await(Duration.ofSeconds(1)))
             }
         assertFalse(time < 1000)
     }
@@ -140,7 +140,7 @@ class CountDownLatchIntegrationTest {
                     name = name,
                     count = count,
                     backends = backends,
-                    maxDuration = 3.seconds,
+                    maxDuration = Duration.ofSeconds(3),
                 ),
             )
         }

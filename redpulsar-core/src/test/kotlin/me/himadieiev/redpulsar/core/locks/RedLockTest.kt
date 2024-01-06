@@ -11,15 +11,13 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
 
 @Tag(TestTags.UNIT)
 class RedLockTest {
@@ -34,11 +32,11 @@ class RedLockTest {
 
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
         @ValueSource(ints = [1, 2, 5, 7, 10])
-        fun `lock acquired`(ttl: Int) {
+        fun `lock acquired`(ttl: Long) {
             every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
-            val permit = redLock.lock("test", ttl.seconds)
+            val permit = redLock.lock("test", Duration.ofSeconds(ttl))
 
             assertTrue(permit)
             verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
@@ -50,7 +48,7 @@ class RedLockTest {
             every { backend.setLock(eq("test"), any(), any()) } returns null
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(backend), retryCount = 3, retryDelay = 20.milliseconds)
+            val redLock = RedLock(listOf(backend), retryCount = 3, retryDelay = Duration.ofMillis(20))
             val permit = redLock.lock("test")
 
             assertFalse(permit)
@@ -89,12 +87,12 @@ class RedLockTest {
 
         @ParameterizedTest(name = "Validated with retry delay - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate retry delay`(retryDelay: Int) {
+        fun `validate retry delay`(retryDelay: Long) {
             if (retryDelay > 0) {
-                Assertions.assertDoesNotThrow { RedLock(listOf(backend), retryDelay = retryDelay.milliseconds) }
+                Assertions.assertDoesNotThrow { RedLock(listOf(backend), retryDelay = Duration.ofMillis(retryDelay)) }
             } else {
                 assertThrows<IllegalArgumentException> {
-                    RedLock(listOf(backend), retryDelay = retryDelay.milliseconds)
+                    RedLock(listOf(backend), retryDelay = Duration.ofMillis(retryDelay))
                 }
             }
         }
@@ -107,30 +105,29 @@ class RedLockTest {
 
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate ttl`(ttl: Int) {
+        fun `validate ttl`(ttl: Long) {
             every { backend.setLock(eq("test"), any(), any()) } returns "OK"
             // validity can be rejected with tiny ttl
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
             if (ttl > 2) {
-                Assertions.assertDoesNotThrow { redLock.lock("test", ttl.milliseconds) }
+                Assertions.assertDoesNotThrow { redLock.lock("test", Duration.ofMillis(ttl)) }
             } else {
-                assertThrows<IllegalArgumentException> { redLock.lock("test", ttl.milliseconds) }
+                assertThrows<IllegalArgumentException> { redLock.lock("test", Duration.ofMillis(ttl)) }
             }
         }
 
-        @Disabled("Kotlin Duration is not matching properly")
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate ttl with kotlin duration mock`(ttl: Int) {
-            every { backend.setLock(eq("test"), any(), eq(ttl.milliseconds)) } returns "OK"
+        fun `validate ttl with kotlin duration mock`(ttl: Long) {
+            every { backend.setLock(eq("test"), any(), eq(Duration.ofMillis(ttl))) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
             if (ttl > 2) {
-                Assertions.assertDoesNotThrow { redLock.lock("test", ttl.milliseconds) }
+                Assertions.assertDoesNotThrow { redLock.lock("test", Duration.ofMillis(ttl)) }
             } else {
-                assertThrows<IllegalArgumentException> { redLock.lock("test", ttl.milliseconds) }
+                assertThrows<IllegalArgumentException> { redLock.lock("test", Duration.ofMillis(ttl)) }
             }
         }
     }
@@ -197,7 +194,7 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances, retryCount = 3, retryDelay = 20.milliseconds)
+            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(20))
             val permit = redLock.lock("test")
 
             assertFalse(permit)
@@ -221,8 +218,8 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances, retryCount = 3, retryDelay = 20.milliseconds)
-            val permit = redLock.lock("test", 20.milliseconds)
+            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(20))
+            val permit = redLock.lock("test", Duration.ofMillis(20))
 
             assertFalse(permit)
             verify(exactly = 3) {

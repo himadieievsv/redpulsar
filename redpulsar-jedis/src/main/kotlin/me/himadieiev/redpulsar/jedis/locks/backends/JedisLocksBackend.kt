@@ -4,7 +4,7 @@ import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import me.himadieiev.redpulsar.core.utils.failsafe
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
-import kotlin.time.Duration
+import java.time.Duration
 
 /**
  * An implementation of [LocksBackend] that uses Redis as a storage.
@@ -15,7 +15,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         clientId: String,
         ttl: Duration,
     ): String? {
-        val lockParams = SetParams().nx().px(ttl.inWholeMilliseconds)
+        val lockParams = SetParams().nx().px(ttl.toMillis())
         return failsafe(null) { jedis.set(resourceName, clientId, lockParams) }
     }
 
@@ -58,7 +58,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
                 jedis.eval(
                     luaScript,
                     listOf(leasersKey, leaserValidityKey),
-                    listOf(clientId, maxLeases.toString(), ttl.inWholeMilliseconds.toString()),
+                    listOf(clientId, maxLeases.toString(), ttl.toMillis().toString()),
                 ),
             )
         }

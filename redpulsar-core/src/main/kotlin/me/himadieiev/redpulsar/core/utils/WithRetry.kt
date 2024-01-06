@@ -2,8 +2,7 @@ package me.himadieiev.redpulsar.core.utils
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
+import java.time.Duration
 
 /**
  * If provided closure returns empty list, it will be retried [retryCount] times
@@ -11,11 +10,11 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 inline fun <R> withRetry(
     retryCount: Int = 3,
-    retryDelay: Duration = 100.milliseconds,
+    retryDelay: Duration = Duration.ofMillis(100),
     block: () -> List<R>,
 ): List<R> {
     var retries = retryCount
-    var exponentialDelay = retryDelay.inWholeMilliseconds
+    var exponentialDelay = retryDelay.toMillis()
     do {
         val result = block()
         if (result.isNotEmpty()) {

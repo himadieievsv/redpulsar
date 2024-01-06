@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import redis.clients.jedis.UnifiedJedis
+import java.time.Duration
 import kotlin.random.Random.Default.nextInt
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @Tag(TestTags.INTEGRATIONS)
 class SemaphoreIntegrationTest {
@@ -34,7 +33,7 @@ class SemaphoreIntegrationTest {
     @Test
     fun `obtain lock`() {
         val semaphore = Semaphore(backends, 3)
-        val permit = semaphore.lock("test", 10.seconds)
+        val permit = semaphore.lock("test", Duration.ofSeconds(10))
 
         assertTrue(permit)
 
@@ -51,7 +50,7 @@ class SemaphoreIntegrationTest {
     @Test
     fun `release lock`() {
         val semaphore = Semaphore(backends, 3)
-        semaphore.lock("test", 10.seconds)
+        semaphore.lock("test", Duration.ofSeconds(10))
 
         val clients = instances.map { it.smembers("semaphore:lasers:test") }
         assertTrue(clients[0] == clients[1] && clients[1] == clients[2])
@@ -81,23 +80,23 @@ class SemaphoreIntegrationTest {
                         backends = backends,
                         maxLeases = it,
                         retryCount = 2,
-                        retryDelay = 30.milliseconds,
+                        retryDelay = Duration.ofMillis(30),
                     ),
                 )
             }
 
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores[it - 1].lock("test", 10.seconds))
+                assertTrue(semaphores[it - 1].lock("test", Duration.ofSeconds(10)))
             }
         val semaphore =
             Semaphore(
                 backends = backends,
                 maxLeases = maxLeases,
                 retryCount = 2,
-                retryDelay = 15.milliseconds,
+                retryDelay = Duration.ofMillis(15),
             )
-        assertFalse(semaphore.lock("test", 100.milliseconds))
+        assertFalse(semaphore.lock("test", Duration.ofMillis(100)))
 
         if (maxLeases > 1) {
             semaphores[nextInt(0, maxLeases - 1)].unlock("test")
@@ -105,7 +104,7 @@ class SemaphoreIntegrationTest {
             semaphores[0].unlock("test")
         }
 
-        assertTrue(semaphore.lock("test", 100.milliseconds))
+        assertTrue(semaphore.lock("test", Duration.ofMillis(100)))
     }
 
     @ParameterizedTest(name = "lock acquired with {0} max leases")
@@ -119,14 +118,14 @@ class SemaphoreIntegrationTest {
                         backends = backends,
                         maxLeases = it,
                         retryCount = 2,
-                        retryDelay = 30.milliseconds,
+                        retryDelay = Duration.ofMillis(30),
                     ),
                 )
             }
 
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores[it - 1].lock("test", 1.seconds))
+                assertTrue(semaphores[it - 1].lock("test", Duration.ofSeconds(1)))
             }
         val semaphores2 = mutableListOf<Semaphore>()
         (1..maxLeases)
@@ -136,13 +135,13 @@ class SemaphoreIntegrationTest {
                         backends = backends,
                         maxLeases = it,
                         retryCount = 2,
-                        retryDelay = 30.milliseconds,
+                        retryDelay = Duration.ofMillis(30),
                     ),
                 )
             }
         (1..maxLeases)
             .forEach {
-                assertFalse(semaphores2[it - 1].lock("test", 20.milliseconds))
+                assertFalse(semaphores2[it - 1].lock("test", Duration.ofMillis(20)))
             }
 
         runBlocking {
@@ -150,7 +149,7 @@ class SemaphoreIntegrationTest {
         }
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores2[it - 1].lock("test", 20.milliseconds))
+                assertTrue(semaphores2[it - 1].lock("test", Duration.ofMillis(20)))
             }
     }
 }
