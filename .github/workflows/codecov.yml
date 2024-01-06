@@ -3,10 +3,9 @@ name: Report Code Coverage
 on:
   workflow_run:
     workflows: [ "Unit Tests" ]
+    branches: [ "main" ]
     types:
       - completed
-  push:
-    branches: [ "main" ]
 
 jobs:
   codecov:
