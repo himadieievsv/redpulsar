@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.minutes
 /**
  * A factory for creating lock instances.
  */
-interface LockFactory {
+class LockFactory {
     companion object {
         /**
          * Create a new [SimpleLock] instance.
@@ -26,6 +26,7 @@ interface LockFactory {
          * @param retryCount [Int] the number of retries.
          * @return [SimpleLock] the lock instance.
          */
+        @JvmStatic
         fun createSimpleLock(
             client: LettucePooled<String, String>,
             retryDelay: Duration = 100.milliseconds,
@@ -42,6 +43,7 @@ interface LockFactory {
          * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [RedLock] the lock instance.
          */
+        @JvmStatic
         fun createRedLock(
             clients: List<LettucePooled<String, String>>,
             retryDelay: Duration = 100.milliseconds,
@@ -61,6 +63,7 @@ interface LockFactory {
          * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [Semaphore] the lock instance.
          */
+        @JvmStatic
         fun createSemaphore(
             clients: List<LettucePooled<String, String>>,
             maxLeases: Int,
@@ -82,6 +85,7 @@ interface LockFactory {
          * @param retryDelay [Duration] the delay between retries.
          * @return [ListeningCountDownLatch] the latch instance.
          */
+        @JvmStatic
         fun createCountDownLatch(
             clients: List<LettucePubSubPooled<String, String>>,
             name: String,

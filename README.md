@@ -35,7 +35,7 @@ docker-compose up -d
 # Run only unit tests
 ./gradlew test -DexcludeTags="integration"
 # Build
-./gradlew build
+./gradlew build -x test
 # Code formatting
 ./gradlew ktlintFormat
 ```
