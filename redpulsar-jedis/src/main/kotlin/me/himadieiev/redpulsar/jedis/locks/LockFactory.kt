@@ -25,6 +25,7 @@ interface LockFactory {
          * @param retryCount [Int] the number of retries.
          * @return [SimpleLock] the lock instance.
          */
+        @JvmStatic
         fun createSimpleLock(
             client: UnifiedJedis,
             retryDelay: Duration = 100.milliseconds,
@@ -41,6 +42,7 @@ interface LockFactory {
          * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [RedLock] the lock instance.
          */
+        @JvmStatic
         fun createRedLock(
             clients: List<UnifiedJedis>,
             retryDelay: Duration = 100.milliseconds,
@@ -60,6 +62,7 @@ interface LockFactory {
          * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [Semaphore] the lock instance.
          */
+        @JvmStatic
         fun createSemaphore(
             clients: List<UnifiedJedis>,
             maxLeases: Int,
@@ -81,6 +84,7 @@ interface LockFactory {
          * @param retryDelay [Duration] the delay between retries.
          * @return [ListeningCountDownLatch] the latch instance.
          */
+        @JvmStatic
         fun createCountDownLatch(
             clients: List<UnifiedJedis>,
             name: String,
