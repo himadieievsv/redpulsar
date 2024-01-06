@@ -80,8 +80,8 @@ class SemaphoreIntegrationTest {
                     Semaphore(
                         backends = backends,
                         maxLeases = it,
-                        retryDelay = 30.milliseconds,
                         retryCount = 2,
+                        retryDelay = 30.milliseconds,
                     ),
                 )
             }
@@ -94,8 +94,8 @@ class SemaphoreIntegrationTest {
             Semaphore(
                 backends = backends,
                 maxLeases = maxLeases,
-                retryDelay = 15.milliseconds,
                 retryCount = 2,
+                retryDelay = 15.milliseconds,
             )
         assertFalse(semaphore.lock("test", 100.milliseconds))
 
@@ -118,8 +118,8 @@ class SemaphoreIntegrationTest {
                     Semaphore(
                         backends = backends,
                         maxLeases = it,
-                        retryDelay = 30.milliseconds,
                         retryCount = 2,
+                        retryDelay = 30.milliseconds,
                     ),
                 )
             }
@@ -135,8 +135,8 @@ class SemaphoreIntegrationTest {
                     Semaphore(
                         backends = backends,
                         maxLeases = it,
-                        retryDelay = 30.milliseconds,
                         retryCount = 2,
+                        retryDelay = 30.milliseconds,
                     ),
                 )
             }

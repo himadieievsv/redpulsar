@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class SimpleLock(
     private val backend: LocksBackend,
-    private val retryDelay: Duration = 200.milliseconds,
+    private val retryDelay: Duration = 100.milliseconds,
     private val retryCount: Int = 3,
 ) : AbstractLock() {
     init {

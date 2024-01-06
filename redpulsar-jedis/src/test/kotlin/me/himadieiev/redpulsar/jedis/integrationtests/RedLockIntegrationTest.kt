@@ -52,7 +52,7 @@ class RedLockIntegrationTest {
     @Test
     fun `another client can re-acquire lock`() {
         val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryDelay = 50.milliseconds, retryCount = 2)
+        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = 50.milliseconds)
 
         assertTrue(redLock.lock("test", 10.seconds))
         assertFalse(redLock2.lock("test", 10.milliseconds))
@@ -64,7 +64,7 @@ class RedLockIntegrationTest {
     @Test
     fun `another client can re-acquire lock due to expiration`() {
         val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryDelay = 30.milliseconds, retryCount = 2)
+        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = 30.milliseconds)
 
         assertTrue(redLock.lock("test", 200.milliseconds))
         assertFalse(redLock2.lock("test", 10.milliseconds))

@@ -84,7 +84,7 @@ class SemaphoreTest {
                 )
             } returns "OK"
 
-            val semaphore = Semaphore(listOf(backend), 3, 15.milliseconds, 4)
+            val semaphore = Semaphore(listOf(backend), 3, 4, 15.milliseconds)
             val permit = semaphore.lock("test", 1.seconds)
 
             assertFalse(permit)
@@ -354,7 +354,7 @@ class SemaphoreTest {
                 } returns "OK"
             }
 
-            val semaphore = Semaphore(instances, 3, 20.milliseconds, 3)
+            val semaphore = Semaphore(instances, 3, 3, 20.milliseconds)
             val permit = semaphore.lock("test")
 
             assertFalse(permit)
