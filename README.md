@@ -1,5 +1,6 @@
 # RedPulsar
 
+[![Release](https://img.shields.io/github/release/himadieievsv/redpulsar.svg?sort=semver&color=blue)](https://github.com/himadieievsv/redpulsar/releases/latest)
 ![Unit Tests](https://github.com/himadieievsv/redpulsar/actions/workflows/unit-tests.yml/badge.svg)
 ![Integration Tests](https://github.com/himadieievsv/redpulsar/actions/workflows/integration-tests.yml/badge.svg)
 [![Apache 2.0 licensed](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
