@@ -2,6 +2,13 @@
 
 ## Getting started
 
+Gradle dependency:
+```kotlin
+implementation("me.himadieiev:redpulsar-core:0.1.1")
+implementation("me.himadieiev:redpulsar-jedis:0.1.1")
+implementation("redis.clients:jedis:5.1.0")
+```
+
 Creating client is simple as:
 ```kotlin
 // Create Jedis Client

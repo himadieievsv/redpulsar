@@ -2,6 +2,13 @@
 
 ## Getting started
 
+Gradle dependency:
+```kotlin
+implementation("me.himadieiev:redpulsar-core:0.1.1")
+implementation("me.himadieiev:redpulsar-lettuce:0.1.1")
+implementation("io.lettuce:lettuce-core:6.3.0.RELEASE")
+```
+
 Creating client is simple as:
 ```kotlin
 // Create Lettuce Pooled Client
