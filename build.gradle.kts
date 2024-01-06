@@ -6,8 +6,9 @@ buildscript {
 
 plugins {
     kotlin("jvm") version "1.9.22"
-    id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
     `java-library`
+    id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
+    id("org.jetbrains.kotlinx.kover") version "0.7.5"
     `maven-publish`
     idea
 }
@@ -27,6 +28,7 @@ subprojects {
     apply(plugin = "idea")
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
+    apply(plugin = "org.jetbrains.kotlinx.kover")
 
     kotlin {
         jvmToolchain(11)
