@@ -22,6 +22,13 @@ jobs:
           :redpulsar-jedis:test \
           :redpulsar-lettuce:test \
           -DexcludeTags="integration"
+      - name: Test Coverage
+        run: |
+          ./gradlew \
+          :redpulsar-core:testCoverage \
+          :redpulsar-jedis:testCoverage \
+          :redpulsar-lettuce:testCoverage \
+          -DexcludeTags="integration"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
