@@ -1,4 +1,4 @@
-name: All tests and codecov
+name: Integration Tests
 
 on:
   push:
@@ -51,8 +51,5 @@ jobs:
           ./gradlew \
           :redpulsar-core:test \
           :redpulsar-jedis:test \
-          :redpulsar-lettuce:test
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          :redpulsar-lettuce:test \
+          -DexcludeTags="unit"
