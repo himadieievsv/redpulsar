@@ -8,6 +8,9 @@ on:
 
 jobs:
   integration-tests:
+    strategy:
+      matrix:
+        version: [ 11, 17, 21 ]
     runs-on: ubuntu-latest
     services:
       redis1:
@@ -41,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: ${{ matrix.version }}
           distribution: 'temurin'
       - name: Run tests
         run: |
@@ -50,8 +53,3 @@ jobs:
           :redpulsar-jedis:test \
           :redpulsar-lettuce:test \
           -DexcludeTags="unit"
-      - name: Archive test report
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-report
-          path: redpulsar*/build/test-results/**/*.xml

@@ -52,7 +52,7 @@ RedPulsar project have an abstraction level for data storage called [Backend](./
 New data storage should use a new module and implement same abstractions as current Redis implementations. 
 
 ### Contributing
-Contributions are welcome! Please feel free to submit a Pull Request from project fork .
+Contributions are welcome! Please make sure to create Issue first before working on improvements o new features, feel free to submit a Pull Request from a project fork.
 
 ## Furthers plans
 - [ ] Add ListenerLock using Pub/Sub mechanism instead of polling.

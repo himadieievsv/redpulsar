@@ -1,10 +1,13 @@
-name: Test and Build with Gradle
+name: Integration tests
 
 on:
   push:
+    tags:
+      - '*'
+      - '**'
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,9 +15,6 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Check formatting
-        run: | 
-          ./gradlew ktlintCheck
       - name: Run tests
         run: |
           ./gradlew \
@@ -22,3 +22,15 @@ jobs:
           :redpulsar-jedis:test \
           :redpulsar-lettuce:test \
           -DexcludeTags="integration"
+      - name: Build
+        run: |
+          ./gradlew \
+          :redpulsar-core:build \
+          :redpulsar-jedis:build \
+          :redpulsar-lettuce:build \
+          -x test
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifact
+          path: redpulsar*/build/libs/*.jar
