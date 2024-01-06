@@ -1,4 +1,4 @@
-name: Test and Build with Gradle
+name: Unit Test
 
 on:
   push:
