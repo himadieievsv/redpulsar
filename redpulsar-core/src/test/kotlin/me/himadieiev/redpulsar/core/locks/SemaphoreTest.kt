@@ -36,7 +36,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(ttl)),
                 )
             } returns "OK"
 
@@ -49,7 +49,7 @@ class SemaphoreTest {
                     eq("semaphore:leasers:test"),
                     match { it.startsWith("semaphore:test:") },
                     any(),
-                    eq(3),
+                    any(),
                     any(),
                 )
             }
@@ -67,7 +67,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(1)),
                 )
             } returns null
             every {
@@ -198,7 +198,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofMillis(ttl)),
                 )
             } returns "OK"
 
@@ -235,7 +235,7 @@ class SemaphoreTest {
                         match { it.startsWith("semaphore:test:") },
                         any(),
                         eq(3),
-                        any(),
+                        eq(Duration.ofSeconds(10)),
                     )
                 } returns "OK"
             }
@@ -269,7 +269,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(10)),
                 )
             } returns "OK"
             every {
@@ -278,7 +278,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(10)),
                 )
             } returns null
             every {
@@ -287,7 +287,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(10)),
                 )
             } returns "OK"
 
@@ -321,7 +321,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(3)),
                 )
             } returns null
             every {
@@ -330,7 +330,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(3)),
                 )
             } returns null
             every {
@@ -339,7 +339,7 @@ class SemaphoreTest {
                     match { it.startsWith("semaphore:test:") },
                     any(),
                     eq(3),
-                    any(),
+                    eq(Duration.ofSeconds(3)),
                 )
             } returns "OK"
             instances.forEach { backend ->
@@ -360,7 +360,7 @@ class SemaphoreTest {
             }
 
             val semaphore = Semaphore(instances, 3, 3, Duration.ofMillis(20))
-            val permit = semaphore.lock("test")
+            val permit = semaphore.lock("test", Duration.ofSeconds(3))
 
             assertFalse(permit)
 

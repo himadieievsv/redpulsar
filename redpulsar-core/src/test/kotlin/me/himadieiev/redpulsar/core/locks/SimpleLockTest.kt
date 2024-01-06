@@ -28,7 +28,7 @@ class SimpleLockTest {
     @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
     @ValueSource(ints = [1, 2, 5, 7, 10])
     fun `lock acquired`(ttl: Long) {
-        every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+        every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(ttl))) } returns "OK"
 
         val simpleLock = SimpleLock(backend)
         val permit = simpleLock.lock("test", Duration.ofSeconds(ttl))
@@ -42,7 +42,7 @@ class SimpleLockTest {
     @Test
     fun `lock already taken or instance is down`() {
         // every { redis.set(eq("test"), any(), any()) } returns null
-        every { backend.setLock(eq("test"), any(), any()) } returns null
+        every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(1))) } returns null
 
         val simpleLock = SimpleLock(backend, retryDelay = Duration.ofMillis(20), retryCount = 3)
         val permit = simpleLock.lock("test", Duration.ofSeconds(1))

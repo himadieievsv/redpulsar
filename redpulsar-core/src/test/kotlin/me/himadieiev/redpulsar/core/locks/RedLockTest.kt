@@ -33,19 +33,19 @@ class RedLockTest {
         @ParameterizedTest(name = "lock acquired with {0} seconds ttl")
         @ValueSource(ints = [1, 2, 5, 7, 10])
         fun `lock acquired`(ttl: Long) {
-            every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+            every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(ttl))) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
             val permit = redLock.lock("test", Duration.ofSeconds(ttl))
 
             assertTrue(permit)
-            verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
+            verify(exactly = 1) { backend.setLock(any(), any(), any()) }
             verify(exactly = 0) { backend.removeLock(any(), any()) }
         }
 
         @Test
         fun `lock already taken or instance is down`() {
-            every { backend.setLock(eq("test"), any(), any()) } returns null
+            every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(10))) } returns null
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
             val redLock = RedLock(listOf(backend), retryCount = 3, retryDelay = Duration.ofMillis(20))
@@ -54,8 +54,8 @@ class RedLockTest {
             assertFalse(permit)
 
             verify(exactly = 3) {
-                backend.setLock(eq("test"), any(), any())
-                backend.removeLock(eq("test"), any())
+                backend.setLock(any(), any(), any())
+                backend.removeLock(any(), any())
             }
         }
 
@@ -106,22 +106,9 @@ class RedLockTest {
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate ttl`(ttl: Long) {
-            every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+            every { backend.setLock(eq("test"), any(), eq(Duration.ofMillis(ttl))) } returns "OK"
             // validity can be rejected with tiny ttl
             every { backend.removeLock(eq("test"), any()) } returns "OK"
-
-            val redLock = RedLock(listOf(backend))
-            if (ttl > 2) {
-                Assertions.assertDoesNotThrow { redLock.lock("test", Duration.ofMillis(ttl)) }
-            } else {
-                assertThrows<IllegalArgumentException> { redLock.lock("test", Duration.ofMillis(ttl)) }
-            }
-        }
-
-        @ParameterizedTest(name = "lock acquired with ttl - {0}")
-        @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
-        fun `validate ttl with kotlin duration mock`(ttl: Long) {
-            every { backend.setLock(eq("test"), any(), eq(Duration.ofMillis(ttl))) } returns "OK"
 
             val redLock = RedLock(listOf(backend))
             if (ttl > 2) {

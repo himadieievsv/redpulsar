@@ -38,9 +38,9 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `count down`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 3, 4, "OK")
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 4, "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, returnVal = "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 3, 4, returnVal = "OK")
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 4, returnVal = "OK")
             val latch =
                 ListeningCountDownLatch(
                     "test",
@@ -56,7 +56,7 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `count down failing`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, null)
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, returnVal = null)
             backend.everyUndoCount("countdownlatch:test", 2, 1)
             val latch =
                 ListeningCountDownLatch(
@@ -75,7 +75,7 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `undo count failing`() {
-            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, null)
+            backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 2, 2, returnVal = null)
             backend.everyUndoCount("countdownlatch:test", 2, null)
             val latch =
                 ListeningCountDownLatch(
@@ -173,9 +173,9 @@ class ListeningCountDownLatchTest {
             coEvery {
                 backend.listen(eq("countdownlatch:channels:test"))
             } returns
-                flow {
-                    delay(1000)
-                }
+                    flow {
+                        delay(1000)
+                    }
 
             backend.everyCheckCount("countdownlatch:test", 2)
             val latch = ListeningCountDownLatch("test", 4, listOf(backend))
@@ -408,7 +408,7 @@ class ListeningCountDownLatchTest {
         @Test
         fun `all instances are in quorum for count down`() {
             instances.forEach { backend ->
-                backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+                backend.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), "OK")
             }
             val latch =
                 ListeningCountDownLatch(
@@ -427,9 +427,9 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `two instances are in quorum for count down`() {
-            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
-            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4,Duration.ofMinutes(10), "OK")
+            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10), null)
+            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10),"OK")
             val latch =
                 ListeningCountDownLatch(
                     "test",
@@ -447,9 +447,9 @@ class ListeningCountDownLatchTest {
 
         @Test
         fun `quorum wasn't reach for count down`() {
-            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, null)
-            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, "OK")
+            backend1.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10),null)
+            backend2.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10),null)
+            backend3.everyCount("countdownlatch:test", "countdownlatch:channels:test", 4, 4, Duration.ofMinutes(10),"OK")
             instances.forEach { backend ->
                 backend.everyUndoCount("countdownlatch:test", 4, 1)
             }
@@ -618,6 +618,7 @@ class ListeningCountDownLatchTest {
         channelName: String,
         count: Int,
         initialCount: Int,
+        maxDuration: Duration = Duration.ofSeconds(20),
         returnVal: String?,
     ) {
         val backend = this
@@ -629,8 +630,7 @@ class ListeningCountDownLatchTest {
                 any(),
                 eq(count),
                 eq(initialCount),
-                // TODO 10.seconds * 2
-                any(),
+                eq(maxDuration),
             )
         } returns returnVal
     }
