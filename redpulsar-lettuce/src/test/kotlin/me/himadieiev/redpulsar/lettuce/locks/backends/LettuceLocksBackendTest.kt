@@ -1,4 +1,4 @@
-package me.himadieiev.redpulsar.lettuce.locks
+package me.himadieiev.redpulsar.lettuce.locks.backends
 
 import equalsTo
 import io.lettuce.core.ScriptOutputType

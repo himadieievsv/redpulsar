@@ -7,7 +7,7 @@ import kotlinx.coroutines.runBlocking
 import me.himadieiev.redpulsar.core.locks.Semaphore
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import me.himadieiev.redpulsar.lettuce.LettucePooled
-import me.himadieiev.redpulsar.lettuce.locks.LettuceLocksBackend
+import me.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach

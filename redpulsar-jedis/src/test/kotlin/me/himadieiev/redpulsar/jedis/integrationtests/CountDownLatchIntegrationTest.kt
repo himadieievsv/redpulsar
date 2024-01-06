@@ -10,7 +10,7 @@ import me.himadieiev.redpulsar.core.locks.ListeningCountDownLatch
 import me.himadieiev.redpulsar.core.locks.api.CallResult
 import me.himadieiev.redpulsar.core.locks.api.CountDownLatch
 import me.himadieiev.redpulsar.core.utils.withTimeoutInThread
-import me.himadieiev.redpulsar.jedis.locks.JedisCountDownLatchBackend
+import me.himadieiev.redpulsar.jedis.locks.backends.JedisCountDownLatchBackend
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

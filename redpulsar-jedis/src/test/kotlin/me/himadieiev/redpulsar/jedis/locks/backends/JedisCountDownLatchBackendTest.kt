@@ -1,4 +1,4 @@
-package me.himadieiev.redpulsar.jedis.locks
+package me.himadieiev.redpulsar.jedis.locks.backends
 
 import io.mockk.every
 import io.mockk.mockk

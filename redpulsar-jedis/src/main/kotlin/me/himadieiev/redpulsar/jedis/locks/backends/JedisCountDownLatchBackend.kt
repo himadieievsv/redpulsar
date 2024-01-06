@@ -1,4 +1,4 @@
-package me.himadieiev.redpulsar.jedis.locks
+package me.himadieiev.redpulsar.jedis.locks.backends
 
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
