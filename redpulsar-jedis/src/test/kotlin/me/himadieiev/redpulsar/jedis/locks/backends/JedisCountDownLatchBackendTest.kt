@@ -1,4 +1,4 @@
-package me.himadieiev.redpulsar.jedis.locks
+package me.himadieiev.redpulsar.jedis.locks.backends
 
 import io.mockk.every
 import io.mockk.mockk
@@ -135,7 +135,7 @@ class JedisCountDownLatchBackendTest {
                 val first = flow.first()
                 assertEquals("open", first)
             }
-            runBlocking { sleep(50) }
+            runBlocking { sleep(100) }
             repeat(messageCount) {
                 pubSubSlot.captured.onMessage("latch:channel:test", "test")
             }

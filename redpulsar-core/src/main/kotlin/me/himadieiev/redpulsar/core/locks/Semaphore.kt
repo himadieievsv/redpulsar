@@ -14,8 +14,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class Semaphore(
     backends: List<LocksBackend>,
     private val maxLeases: Int,
-    private val retryDelay: Duration = 200.milliseconds,
     private val retryCount: Int = 3,
+    private val retryDelay: Duration = 100.milliseconds,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) : AbstractMultyInstanceLock(backends, scope) {
     private val globalKeyPrefix = "semaphore"

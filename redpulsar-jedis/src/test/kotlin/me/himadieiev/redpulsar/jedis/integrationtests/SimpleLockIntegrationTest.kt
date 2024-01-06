@@ -6,7 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import me.himadieiev.redpulsar.core.locks.SimpleLock
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import me.himadieiev.redpulsar.jedis.locks.JedisLocksBackend
+import me.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull

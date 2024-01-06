@@ -1,4 +1,4 @@
-package me.himadieiev.redpulsar.jedis.locks
+package me.himadieiev.redpulsar.jedis.locks.backends
 
 import me.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import me.himadieiev.redpulsar.core.utils.failsafe
