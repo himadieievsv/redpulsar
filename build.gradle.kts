@@ -1,3 +1,5 @@
+import java.net.URI
+
 buildscript {
     repositories {
         mavenCentral()
@@ -74,6 +76,16 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven {
+                url = URI.create("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                credentials {
+                    username = providers.gradleProperty("ossrhUsername").get()
+                    password = providers.gradleProperty("ossrhPassword").get()
+                }
+            }
+        }
+
         publications {
             create<MavenPublication>("mavenJava") {
                 groupId = group.toString()
