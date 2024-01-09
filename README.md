@@ -37,15 +37,25 @@ To build or test RedPulsar, run the following command:
 ```bash
 git clone git@github.com:himadieievsv/redpulsar.git
 cd redpulsar
+
 # Code formatting
 ./gradlew ktlintFormat
+
 # Run all tests
 docker-compose up -d
 ./gradlew test 
+
 # Run only unit tests
 ./gradlew test -DexcludeTags="integration"
-# Build and publish to local maven repository
-./gradlew build -x test publishToMavenLocal
+
+# Build
+./gradlew build -x test
+
+# Publish to local maven repository
+./gradlew publishToMavenLocal \
+  -Psigning.secretKeyRingFile=... \
+  -Psigning.password=... \
+  -Psigning.keyId=...
 ```
 
 ## Further development 

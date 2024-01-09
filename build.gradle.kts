@@ -1,3 +1,5 @@
+import java.net.URI
+
 buildscript {
     repositories {
         mavenCentral()
@@ -10,6 +12,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
     id("org.jetbrains.kotlinx.kover") version "0.7.5"
     `maven-publish`
+    signing
     idea
 }
 
@@ -28,6 +31,7 @@ subprojects {
     apply(plugin = "idea")
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
+    apply(plugin = "signing")
     apply(plugin = "org.jetbrains.kotlinx.kover")
 
     kotlin {
@@ -72,6 +76,16 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven {
+                url = URI.create("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                credentials {
+                    username = providers.gradleProperty("ossrhUsername").get()
+                    password = providers.gradleProperty("ossrhPassword").get()
+                }
+            }
+        }
+
         publications {
             create<MavenPublication>("mavenJava") {
                 groupId = group.toString()
@@ -103,6 +117,10 @@ subprojects {
                 }
             }
         }
+    }
+
+    signing {
+        sign(publishing.publications["mavenJava"])
     }
 
     tasks.test {
