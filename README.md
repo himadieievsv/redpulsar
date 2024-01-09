@@ -30,6 +30,14 @@ Minimal required Java version is 11.
 RedPulsar project is written in Kotlin, but can be easily used in Java projects too.
 
 ## Getting started 
+
+Gradle dependency:
+```kotlin
+implementation("com.himadieiev:redpulsar-jedis:0.10.1")
+// OR
+implementation("com.himadieiev:redpulsar-lettuce:0.10.1")
+```
+
 - See [Getting started with redpulsar-jedis](./redpulsar-jedis/README.md#getting-started) for getting started with Jedis.
 - See [Getting started with redpulsar-lettuce](./redpulsar-lettuce/README.md#getting-started) for getting started with Lettuce.
 
