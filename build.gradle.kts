@@ -10,6 +10,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
     id("org.jetbrains.kotlinx.kover") version "0.7.5"
     `maven-publish`
+    signing
     idea
 }
 
@@ -28,6 +29,7 @@ subprojects {
     apply(plugin = "idea")
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
+    apply(plugin = "signing")
     apply(plugin = "org.jetbrains.kotlinx.kover")
 
     kotlin {
@@ -103,6 +105,10 @@ subprojects {
                 }
             }
         }
+    }
+
+    signing {
+        sign(publishing.publications["mavenJava"])
     }
 
     tasks.test {
