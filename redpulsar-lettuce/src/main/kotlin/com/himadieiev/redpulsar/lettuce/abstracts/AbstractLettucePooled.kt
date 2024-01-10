@@ -5,6 +5,7 @@ import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.async.RedisAsyncCommands
 import io.lettuce.core.api.reactive.RedisReactiveCommands
 import io.lettuce.core.api.sync.RedisCommands
+import mu.KotlinLogging
 import org.apache.commons.pool2.impl.GenericObjectPool
 
 /**
@@ -43,7 +44,12 @@ abstract class AbstractLettucePooled<K, V>(
         } finally {
             // Cleaning up connection if a transaction was not handled correctly.
             if (connection.isMulti) {
-                connection.sync().discard()
+                try {
+                    connection.sync().discard()
+                } catch (e: Exception) {
+                    val logger = KotlinLogging.logger { }
+                    logger.error(e) { "Could not discard transaction." }
+                }
             }
             connectionPool.returnObject(connection)
         }

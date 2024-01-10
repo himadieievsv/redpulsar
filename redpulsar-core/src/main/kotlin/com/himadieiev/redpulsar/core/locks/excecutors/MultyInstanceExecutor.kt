@@ -18,6 +18,8 @@ import kotlin.system.measureTimeMillis
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
  * clok drift.
+ * It returns list of results from each instance or empty list if either time validity wasn't met or operation was
+ * failing on majority of instances.
  *
  * Coroutine used by callee must be cooperative coroutine (not blocking).
  * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
@@ -27,6 +29,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
+    crossinline cleanUp: (backend: T) -> Unit = { _ -> },
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -50,6 +53,11 @@ inline fun <T : Backend, R> multyInstanceExecute(
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
+        val cleanUpJobs = mutableListOf<Job>()
+        backends.forEach { backend ->
+            cleanUpJobs.add(scope.launch { cleanUp(backend) })
+        }
+        runBlocking(scope.coroutineContext) { waitAllJobs(cleanUpJobs, Collections.emptyList<String>()) }
         return emptyList()
     }
     return results
@@ -62,6 +70,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
+    crossinline cleanUp: (backend: T) -> Unit = { _ -> },
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -73,6 +82,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
             defaultDrift = defaultDrift,
             waiter = waiter,
             callee = callee,
+            cleanUp = cleanUp,
         )
     }
 }
@@ -83,6 +93,7 @@ fun <T : Backend, R> List<T>.executeWithRetry(
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
+    cleanUp: (backend: T) -> Unit = { _ -> },
     waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -95,5 +106,6 @@ fun <T : Backend, R> List<T>.executeWithRetry(
         retryDelay = retryDelay,
         waiter = waiter,
         callee = callee,
+        cleanUp = cleanUp,
     )
 }

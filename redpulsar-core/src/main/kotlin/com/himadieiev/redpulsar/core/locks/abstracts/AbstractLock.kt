@@ -20,8 +20,8 @@ abstract class AbstractLock : Lock {
         backend: LocksBackend,
         resourceName: String,
         ttl: Duration,
-    ): Boolean {
-        return backend.setLock(resourceName, clientId, ttl) != null
+    ): String? {
+        return backend.setLock(resourceName, clientId, ttl)
     }
 
     /**
@@ -30,7 +30,7 @@ abstract class AbstractLock : Lock {
     protected open fun unlockInstance(
         backend: LocksBackend,
         resourceName: String,
-    ) {
-        backend.removeLock(resourceName, clientId)
+    ): String? {
+        return backend.removeLock(resourceName, clientId)
     }
 }

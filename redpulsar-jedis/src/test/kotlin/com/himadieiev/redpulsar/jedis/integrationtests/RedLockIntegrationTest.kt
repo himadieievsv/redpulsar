@@ -54,10 +54,10 @@ class RedLockIntegrationTest {
         val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(50))
 
         assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
 
         redLock.unlock("test")
-        assertTrue(redLock2.lock("test", Duration.ofMillis(10)))
+        assertTrue(redLock2.lock("test", Duration.ofMillis(100)))
     }
 
     @Test
@@ -66,10 +66,10 @@ class RedLockIntegrationTest {
         val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(30))
 
         assertTrue(redLock.lock("test", Duration.ofMillis(200)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
 
         runBlocking { delay(200) }
-        assertTrue(redLock2.lock("test", Duration.ofMillis(10)))
+        assertTrue(redLock2.lock("test", Duration.ofMillis(100)))
     }
 
     @Test
@@ -78,6 +78,6 @@ class RedLockIntegrationTest {
         val redLock2 = RedLock(backends)
 
         assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(10)))
+        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
     }
 }

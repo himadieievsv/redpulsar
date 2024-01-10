@@ -13,10 +13,10 @@ import java.time.Duration
  */
 class RedLock(
     backends: List<LocksBackend>,
-    private val retryCount: Int = 3,
-    private val retryDelay: Duration = Duration.ofMillis(100),
+    retryCount: Int = 3,
+    retryDelay: Duration = Duration.ofMillis(100),
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultyInstanceLock(backends, scope) {
+) : AbstractMultyInstanceLock(backends, scope, retryCount, retryDelay) {
     init {
         require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
@@ -30,7 +30,7 @@ class RedLock(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        require(ttl.toMillis() > 2) { "Timeout must be greater that min clock drift." }
-        return multyLock(resourceName, ttl, Duration.ofMillis(2), retryCount, retryDelay)
+        require(ttl.toMillis() > 3 * backendSize()) { "Timeout must be greater that min clock drift." }
+        return super.lock(resourceName, ttl)
     }
 }

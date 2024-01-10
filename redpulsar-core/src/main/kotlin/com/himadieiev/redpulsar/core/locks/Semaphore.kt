@@ -13,10 +13,10 @@ import java.time.Duration
 class Semaphore(
     backends: List<LocksBackend>,
     private val maxLeases: Int,
-    private val retryCount: Int = 3,
-    private val retryDelay: Duration = Duration.ofMillis(100),
+    retryCount: Int = 3,
+    retryDelay: Duration = Duration.ofMillis(100),
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultyInstanceLock(backends, scope) {
+) : AbstractMultyInstanceLock(backends, scope, retryCount, retryDelay) {
     private val globalKeyPrefix = "semaphore"
     private val leasersKey = "leasers"
 
@@ -36,29 +36,30 @@ class Semaphore(
         ttl: Duration,
     ): Boolean {
         // ttl is longer that other locks because process of acquiring lock is longer.
-        require(ttl.toMillis() > 10) { "Timeout is too small." }
-        return multyLock(resourceName, ttl, Duration.ofMillis(10), retryCount, retryDelay)
+        require(ttl.toMillis() > 3 * backendSize()) { "Timeout is too small." }
+        return super.lock(resourceName, ttl)
     }
 
     override fun lockInstance(
         backend: LocksBackend,
         resourceName: String,
         ttl: Duration,
-    ): Boolean {
+    ): String? {
         val leasersKey = buildKey(leasersKey, resourceName)
         val leaserValidityKey = buildKey(resourceName, clientId)
-        return backend.setSemaphoreLock(leasersKey, leaserValidityKey, clientId, maxLeases, ttl) != null
+        return backend.setSemaphoreLock(leasersKey, leaserValidityKey, clientId, maxLeases, ttl)
     }
 
     override fun unlockInstance(
         backend: LocksBackend,
         resourceName: String,
-    ) {
+    ): String? {
         val leasersKey = buildKey(leasersKey, resourceName)
         val leaserValidityKey = buildKey(resourceName, clientId)
-        backend.removeSemaphoreLock(leasersKey, leaserValidityKey, clientId)
+        val removeSemaphoreLock = backend.removeSemaphoreLock(leasersKey, leaserValidityKey, clientId)
         // clean up expired other leasers
         cleanUp(backend, resourceName)
+        return removeSemaphoreLock
     }
 
     private fun cleanUp(
