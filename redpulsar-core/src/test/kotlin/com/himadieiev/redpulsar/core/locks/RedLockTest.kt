@@ -174,9 +174,9 @@ class RedLockTest {
 
         @Test
         fun `quorum wasn't reach`() {
-            every { backend1.setLock(eq("test"), any(), any()) } returns null
-            every { backend2.setLock(eq("test"), any(), any()) } returns "OK"
-            every { backend3.setLock(eq("test"), any(), any()) } returns null
+            every { backend1.setLock(eq("test"), any(), eq(Duration.ofSeconds(10))) } returns null
+            every { backend2.setLock(eq("test"), any(), eq(Duration.ofSeconds(10))) } returns "OK"
+            every { backend3.setLock(eq("test"), any(), eq(Duration.ofSeconds(10))) } returns null
             instances.forEach { backend ->
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }

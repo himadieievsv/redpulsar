@@ -1,16 +1,9 @@
 package com.himadieiev.redpulsar.core.locks.abstracts
 
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
+import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.Duration
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.system.measureTimeMillis
 
 /**
  * A distributed lock implementation based on the Redlock algorithm.
@@ -21,64 +14,59 @@ import kotlin.system.measureTimeMillis
 abstract class AbstractMultyInstanceLock(
     private val backends: List<LocksBackend>,
     private val scope: CoroutineScope,
+    private val retryCount: Int = 3,
+    private val retryDelay: Duration = Duration.ofMillis(100),
 ) : AbstractLock() {
-    private val quorum: Int = backends.size / 2 + 1
-
     init {
         require(backends.isNotEmpty()) { "Redis instances must not be empty" }
     }
 
-    override fun unlock(resourceName: String) {
-        allInstances { backend ->
-            unlockInstance(backend, resourceName)
-        }
-    }
-
-    protected fun multyLock(
+    /**
+     * Lock the resource with given name on multiple Redis instances/clusters.
+     * @param resourceName [String] the name of the resource for which lock key was created.
+     * @param ttl [Duration] the time to live of the lock. Smaller ttl will require better clock synchronization.
+     * @return true if lock was acquired, false otherwise.
+     */
+    override fun lock(
         resourceName: String,
         ttl: Duration,
-        defaultDrift: Duration,
-        retryCount: Int,
-        retryDelay: Duration,
     ): Boolean {
-        val clockDrift = (ttl.toMillis() * 0.01 + defaultDrift.toMillis()).toInt()
-        var retries = retryCount
-        do {
-            val acceptedLocks = AtomicInteger(0)
-            val timeDiff =
-                measureTimeMillis {
-                    allInstances { backend ->
-                        if (lockInstance(backend, resourceName, ttl)) acceptedLocks.incrementAndGet()
-                    }
-                }
-            val validity = ttl.toMillis() - timeDiff - clockDrift
-            if (acceptedLocks.get() >= quorum && validity > 0) {
-                return true
-            } else {
-                allInstances { backend ->
-                    unlockInstance(backend, resourceName)
-                }
-            }
-            runBlocking {
-                delay(retryDelay.toMillis())
-            }
-        } while (--retries > 0)
-        return false
-    }
-
-    private fun allInstances(block: suspend (backend: LocksBackend) -> Unit) {
-        val jobs = mutableListOf<Job>()
-        backends.forEach { backend ->
-            jobs.add(
-                scope.launch {
-                    try {
-                        block(backend)
-                    } catch (e: CancellationException) {
-                        logger.error(e) { "Coroutines unexpectedly terminated." }
-                    }
+        val instancesResult =
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = Duration.ofSeconds(1),
+                defaultDrift = Duration.ofMillis(3L * backends.size),
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                callee = { backend ->
+                    lockInstance(backend, resourceName, ttl)
                 },
             )
+        if (instancesResult.isEmpty()) {
+            backends.forEach { backend ->
+                unlockInstance(backend, resourceName)
+            }
         }
-        runBlocking { joinAll(*jobs.toTypedArray()) }
+        return instancesResult.isNotEmpty()
     }
+
+    /**
+     * Unlocks a resource with a given name.
+     * @param resourceName [String] the name of the resource for which lock key was created.
+     * @return [Boolean] true if the lock was released, false otherwise.
+     */
+    override fun unlock(resourceName: String): Boolean {
+        return backends.executeWithRetry(
+            scope = scope,
+            timeout = Duration.ofSeconds(1),
+            defaultDrift = Duration.ofMillis(3L * backends.size),
+            retryCount = retryCount,
+            retryDelay = retryDelay,
+            callee = { backend ->
+                unlockInstance(backend, resourceName)
+            },
+        ).isNotEmpty()
+    }
+
+    protected fun backendSize(): Int = backends.size
 }

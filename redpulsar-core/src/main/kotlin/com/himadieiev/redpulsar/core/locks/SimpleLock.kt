@@ -21,6 +21,8 @@ class SimpleLock(
 
     /**
      * Lock the resource with given name on a single Redis instance/cluster.
+     * @param resourceName [String] the name of the resource for which lock key was created.
+     * @param ttl [Duration] the time to live of the lock. Smaller ttl will require better clock synchronization.
      * @return true if lock was acquired, false otherwise.
      */
     override fun lock(
@@ -30,7 +32,7 @@ class SimpleLock(
         require(ttl.toMillis() > 2) { "Timeout is too small." }
         var retries = retryCount
         do {
-            if (lockInstance(backend, resourceName, ttl)) {
+            if (lockInstance(backend, resourceName, ttl) != null) {
                 return true
             }
             runBlocking {
@@ -42,8 +44,10 @@ class SimpleLock(
 
     /**
      * Unlock the resource with given name on a single Redis instance/cluster.
+     * @param resourceName [String] the name of the resource for which lock key was created.
+     * @return true if lock was released, false otherwise.
      */
-    override fun unlock(resourceName: String) {
-        unlockInstance(backend, resourceName)
+    override fun unlock(resourceName: String): Boolean {
+        return unlockInstance(backend, resourceName) != null
     }
 }

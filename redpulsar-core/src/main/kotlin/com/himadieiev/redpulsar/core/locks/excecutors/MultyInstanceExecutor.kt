@@ -18,6 +18,8 @@ import kotlin.system.measureTimeMillis
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
  * clok drift.
+ * It returns list of results from each instance or empty list if either time validity wasn't met or operation was
+ * failing on majority of instances.
  *
  * Coroutine used by callee must be cooperative coroutine (not blocking).
  * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
@@ -27,12 +29,13 @@ inline fun <T : Backend, R> multyInstanceExecute(
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
+    crossinline cleanUp: (backend: T) -> Unit = { _ -> },
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     val jobs = mutableListOf<Job>()
     val quorum: Int = backends.size / 2 + 1
-    val results = Collections.synchronizedList(mutableListOf<R>())
+    val results = mutableListOf<R>()
     val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
     val timeDiff =
         measureTimeMillis {
@@ -50,6 +53,11 @@ inline fun <T : Backend, R> multyInstanceExecute(
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
+        val cleanUpJobs = mutableListOf<Job>()
+        backends.forEach { backend ->
+            cleanUpJobs.add(scope.launch { cleanUp(backend) })
+        }
+        runBlocking(scope.coroutineContext) { waitAllJobs(cleanUpJobs, Collections.emptyList<String>()) }
         return emptyList()
     }
     return results

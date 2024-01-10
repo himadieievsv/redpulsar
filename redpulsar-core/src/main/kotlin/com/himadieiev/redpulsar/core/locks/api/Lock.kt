@@ -21,6 +21,7 @@ interface Lock {
     /**
      * Unlocks a resource with a given name.
      * @param resourceName [String] the name of the resource for which lock key was created.
+     * @return [Boolean] true if the lock was released, false otherwise.
      */
-    fun unlock(resourceName: String)
+    fun unlock(resourceName: String): Boolean
 }

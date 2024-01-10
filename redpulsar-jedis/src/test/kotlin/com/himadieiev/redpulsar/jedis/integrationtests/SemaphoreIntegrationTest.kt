@@ -145,7 +145,7 @@ class SemaphoreIntegrationTest {
             }
 
         runBlocking {
-            delay(1000)
+            delay(2000)
         }
         (1..maxLeases)
             .forEach {
