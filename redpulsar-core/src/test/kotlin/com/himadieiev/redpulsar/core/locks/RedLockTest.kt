@@ -197,7 +197,7 @@ class RedLockTest {
         fun `lock declined due to clock drift`() {
             every { backend1.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend2.setLock(eq("test"), any(), any()) } answers {
-                runBlocking { delay(20) }
+                runBlocking { delay(30) }
                 "OK"
             }
             every { backend3.setLock(eq("test"), any(), any()) } returns "OK"
@@ -205,8 +205,8 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(20))
-            val permit = redLock.lock("test", Duration.ofMillis(20))
+            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(30))
+            val permit = redLock.lock("test", Duration.ofMillis(30))
 
             assertFalse(permit)
             verify(exactly = 3) {

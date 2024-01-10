@@ -35,7 +35,7 @@ inline fun <T : Backend, R> multyInstanceExecute(
 ): List<R> {
     val jobs = mutableListOf<Job>()
     val quorum: Int = backends.size / 2 + 1
-    val results = mutableListOf<R>()
+    val results = Collections.synchronizedList(mutableListOf<R>())
     val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
     val timeDiff =
         measureTimeMillis {
@@ -70,6 +70,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
+    crossinline cleanUp: (backend: T) -> Unit = { _ -> },
     crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -81,6 +82,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
             defaultDrift = defaultDrift,
             waiter = waiter,
             callee = callee,
+            cleanUp = cleanUp,
         )
     }
 }
@@ -91,6 +93,7 @@ fun <T : Backend, R> List<T>.executeWithRetry(
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
+    cleanUp: (backend: T) -> Unit = { _ -> },
     waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
     callee: suspend (backend: T) -> R,
 ): List<R> {
@@ -103,5 +106,6 @@ fun <T : Backend, R> List<T>.executeWithRetry(
         retryDelay = retryDelay,
         waiter = waiter,
         callee = callee,
+        cleanUp = cleanUp,
     )
 }

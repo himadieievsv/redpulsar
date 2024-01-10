@@ -203,7 +203,7 @@ class SemaphoreTest {
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
-            if (ttl > 10) {
+            if (ttl > 3) {
                 Assertions.assertDoesNotThrow { semaphore.lock("test", Duration.ofMillis(ttl)) }
             } else {
                 assertThrows<IllegalArgumentException> { semaphore.lock("test", Duration.ofMillis(ttl)) }

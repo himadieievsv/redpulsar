@@ -31,23 +31,19 @@ abstract class AbstractMultyInstanceLock(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        val instancesResult =
-            backends.executeWithRetry(
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                defaultDrift = Duration.ofMillis(3L * backends.size),
-                retryCount = retryCount,
-                retryDelay = retryDelay,
-                callee = { backend ->
-                    lockInstance(backend, resourceName, ttl)
-                },
-            )
-        if (instancesResult.isEmpty()) {
-            backends.forEach { backend ->
+        return backends.executeWithRetry(
+            scope = scope,
+            timeout = ttl,
+            defaultDrift = Duration.ofMillis(3L * backends.size),
+            retryCount = retryCount,
+            retryDelay = retryDelay,
+            cleanUp = { backend ->
                 unlockInstance(backend, resourceName)
-            }
-        }
-        return instancesResult.isNotEmpty()
+            },
+            callee = { backend ->
+                lockInstance(backend, resourceName, ttl)
+            },
+        ).isNotEmpty()
     }
 
     /**
