@@ -23,6 +23,13 @@ import kotlin.coroutines.cancellation.CancellationException
  * Allows one or more workloads to wait until a set of other workload are get ready or finished.
  * [ListeningCountDownLatch] implementation uses Redis Pub/Sub mechanism to notify other instances
  * about counter reached to 0.
+ *
+ * @param name [String] the name of the latch.
+ * @param count [Int] the number of times [countDown] must be invoked before threads can pass through [await].
+ * @param backends [List] of [CountDownLatchBackend] instances.
+ * @param maxDuration [Duration] the maximum time to wait.
+ * @param retryCount [Int] the number of retries to acquire lock.
+ * @param retryDelay [Duration] the delay between retries.
  */
 class ListeningCountDownLatch(
     private val name: String,

@@ -8,6 +8,10 @@ import java.time.Duration
 
 /**
  * A distributed lock implementation that using only single Redis Cluster or Redis instance.
+ *
+ * @param backend [LocksBackend] instance.
+ * @param retryDelay [Duration] the delay between retries.
+ * @param retryCount [Int] the number of retries to acquire lock.
  */
 class SimpleLock(
     private val backend: LocksBackend,

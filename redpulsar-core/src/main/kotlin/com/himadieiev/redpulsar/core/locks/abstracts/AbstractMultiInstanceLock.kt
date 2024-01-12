@@ -6,12 +6,12 @@ import kotlinx.coroutines.CoroutineScope
 import java.time.Duration
 
 /**
- * A distributed lock implementation based on the Redlock algorithm.
+ * A distributed lock implementation based on the RedLock algorithm.
  * Algorithm depends on single or multiple Redis instances / clusters.
  * It uses a quorum to determine if the lock was acquired.
  * Details: https://redis.io/docs/manual/patterns/distributed-locks/
  */
-abstract class AbstractMultyInstanceLock(
+abstract class AbstractMultiInstanceLock(
     private val backends: List<LocksBackend>,
     private val scope: CoroutineScope,
     private val retryCount: Int = 3,
