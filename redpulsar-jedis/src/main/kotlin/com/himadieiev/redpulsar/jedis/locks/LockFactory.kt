@@ -54,7 +54,6 @@ class LockFactory {
          * @param maxLeases [Int] the maximum number of leases.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
-         * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [Semaphore] the lock instance.
          */
         @JvmStatic
