@@ -3,7 +3,7 @@ package com.himadieiev.redpulsar.core.utils
 import mu.KotlinLogging
 
 /**
- * Catch and supress all types of exceptions.
+ * Catch and suppress all types of exceptions.
  * If [block] failed to run with exception, default value will be returned.
  */
 inline fun <R> failsafe(

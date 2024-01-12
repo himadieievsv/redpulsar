@@ -1,6 +1,6 @@
 package com.himadieiev.redpulsar.core.locks
 
-import com.himadieiev.redpulsar.core.locks.abstracts.AbstractMultyInstanceLock
+import com.himadieiev.redpulsar.core.locks.abstracts.AbstractMultiInstanceLock
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +9,12 @@ import java.time.Duration
 /**
  * An implementation for Semaphore lock in distributed systems.
  * Semaphore lock is a lock that allows multiple clients to acquire the lock until lock limit is reached.
+ *
+ * @param backends [List] of [LocksBackend] instances.
+ * @param maxLeases [Int] the maximum number of leases that can be acquired.
+ * @param retryCount [Int] the number of retries to acquire lock.
+ * @param retryDelay [Duration] the delay between retries.
+ * @param scope [CoroutineScope] the scope for coroutines.
  */
 class Semaphore(
     backends: List<LocksBackend>,
@@ -16,7 +22,7 @@ class Semaphore(
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultyInstanceLock(backends, scope, retryCount, retryDelay) {
+) : AbstractMultiInstanceLock(backends, scope, retryCount, retryDelay) {
     private val globalKeyPrefix = "semaphore"
     private val leasersKey = "leasers"
 
