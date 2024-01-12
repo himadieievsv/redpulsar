@@ -8,8 +8,6 @@ import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceCountDownLatchBackend
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import java.time.Duration
 
 /**
@@ -38,7 +36,6 @@ class LockFactory {
          * @param clients [List]<[LettucePooled]> the Jedis client instances to use for lock.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
-         * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [RedLock] the lock instance.
          */
         @JvmStatic
@@ -46,10 +43,9 @@ class LockFactory {
             clients: List<LettucePooled<String, String>>,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
-            scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): RedLock {
             val backends = clients.map { LettuceLocksBackend(it) }
-            return RedLock(backends, retryCount, retryDelay, scope)
+            return RedLock(backends, retryCount, retryDelay)
         }
 
         /**
@@ -58,7 +54,6 @@ class LockFactory {
          * @param maxLeases [Int] the maximum number of leases.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
-         * @param scope [CoroutineScope] the coroutine scope to use for lock.
          * @return [Semaphore] the lock instance.
          */
         @JvmStatic
@@ -67,10 +62,9 @@ class LockFactory {
             maxLeases: Int,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
-            scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
         ): Semaphore {
             val backends = clients.map { LettuceLocksBackend(it) }
-            return Semaphore(backends, maxLeases, retryCount, retryDelay, scope)
+            return Semaphore(backends, maxLeases, retryCount, retryDelay)
         }
 
         /**

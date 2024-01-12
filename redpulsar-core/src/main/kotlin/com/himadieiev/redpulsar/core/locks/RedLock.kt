@@ -2,6 +2,7 @@ package com.himadieiev.redpulsar.core.locks
 
 import com.himadieiev.redpulsar.core.locks.abstracts.AbstractMultiInstanceLock
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.time.Duration
@@ -14,14 +15,17 @@ import java.time.Duration
  * @param backends [List] of [LocksBackend] instances.
  * @param retryCount [Int] the number of retries to acquire lock.
  * @param retryDelay [Duration] the delay between retries.
- * @param scope [CoroutineScope] the scope for coroutines.
  */
 class RedLock(
     backends: List<LocksBackend>,
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
-    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultiInstanceLock(backends, scope, retryCount, retryDelay) {
+) : AbstractMultiInstanceLock(
+        backends,
+        CoroutineScope(CoroutineName("redLock") + Dispatchers.IO),
+        retryCount,
+        retryDelay,
+    ) {
     init {
         require(retryDelay.toMillis() > 0) { "Retry delay must be positive" }
         require(retryCount > 0) { "Retry count must be positive" }
