@@ -6,7 +6,6 @@ import com.himadieiev.redpulsar.core.locks.Semaphore
 import com.himadieiev.redpulsar.core.locks.SimpleLock
 import com.himadieiev.redpulsar.jedis.locks.backends.JedisCountDownLatchBackend
 import com.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
-import kotlinx.coroutines.CoroutineScope
 import redis.clients.jedis.UnifiedJedis
 import java.time.Duration
 
