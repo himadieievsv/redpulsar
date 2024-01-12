@@ -2,6 +2,7 @@ package com.himadieiev.redpulsar.core.locks
 
 import com.himadieiev.redpulsar.core.locks.abstracts.AbstractMultiInstanceLock
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.time.Duration
@@ -14,15 +15,18 @@ import java.time.Duration
  * @param maxLeases [Int] the maximum number of leases that can be acquired.
  * @param retryCount [Int] the number of retries to acquire lock.
  * @param retryDelay [Duration] the delay between retries.
- * @param scope [CoroutineScope] the scope for coroutines.
  */
 class Semaphore(
     backends: List<LocksBackend>,
     private val maxLeases: Int,
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
-    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
-) : AbstractMultiInstanceLock(backends, scope, retryCount, retryDelay) {
+) : AbstractMultiInstanceLock(
+        backends,
+        CoroutineScope(CoroutineName("semaphore") + Dispatchers.IO),
+        retryCount,
+        retryDelay,
+    ) {
     private val globalKeyPrefix = "semaphore"
     private val leasersKey = "leasers"
 
