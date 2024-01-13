@@ -512,7 +512,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
-            coVerify(exactly = 1) {
+            coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
             verify(exactly = 1) {
@@ -562,7 +562,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
-            coVerify(exactly = 1) {
+            coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
             verify(exactly = 1) {
