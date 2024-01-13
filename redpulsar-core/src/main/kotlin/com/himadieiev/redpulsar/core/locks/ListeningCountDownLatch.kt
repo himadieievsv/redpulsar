@@ -4,6 +4,7 @@ import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBack
 import com.himadieiev.redpulsar.core.locks.api.CallResult
 import com.himadieiev.redpulsar.core.locks.api.CountDownLatch
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
+import com.himadieiev.redpulsar.core.locks.excecutors.waitAllJobs
 import com.himadieiev.redpulsar.core.locks.excecutors.waitMajorityJobs
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -140,46 +141,55 @@ class ListeningCountDownLatch(
     }
 
     private fun count(): List<String?> {
-        return backends.executeWithRetry(
-            scope = scope,
-            timeout = maxDuration,
-            retryCount = retryCount,
-            retryDelay = retryDelay,
-        ) { backend ->
-            backend.count(
-                latchKeyName = buildKey(name),
-                channelName = buildKey(channelSpace, name),
-                clientId = clientId,
-                count = currentCounter.get(),
-                initialCount = count,
-                ttl = maxDuration.multipliedBy(2),
-            )
+        return runBlocking {
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = maxDuration,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                waiter = ::waitAllJobs,
+            ) { backend ->
+                backend.count(
+                    latchKeyName = buildKey(name),
+                    channelName = buildKey(channelSpace, name),
+                    clientId = clientId,
+                    count = currentCounter.get(),
+                    initialCount = count,
+                    ttl = maxDuration.multipliedBy(2),
+                )
+            }
         }
     }
 
     private fun undoCount() {
-        backends.executeWithRetry(
-            scope = scope,
-            timeout = maxDuration,
-            retryCount = retryCount,
-            retryDelay = retryDelay,
-        ) { backend ->
-            backend.undoCount(
-                latchKeyName = buildKey(name),
-                clientId = clientId,
-                count = currentCounter.get(),
-            )
+        runBlocking {
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = maxDuration,
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                waiter = ::waitAllJobs,
+            ) { backend ->
+                backend.undoCount(
+                    latchKeyName = buildKey(name),
+                    clientId = clientId,
+                    count = currentCounter.get(),
+                )
+            }
         }
     }
 
     private fun checkCount(scope: CoroutineScope): List<Long?> {
-        return backends.executeWithRetry(
-            scope = scope,
-            timeout = maxDuration.multipliedBy(2),
-            retryCount = retryCount,
-            retryDelay = retryDelay,
-        ) { backend ->
-            backend.checkCount(latchKeyName = buildKey(name))
+        return runBlocking {
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = maxDuration.multipliedBy(2),
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                waiter = ::waitAllJobs,
+            ) { backend ->
+                backend.checkCount(latchKeyName = buildKey(name))
+            }
         }
     }
 
@@ -192,8 +202,6 @@ class ListeningCountDownLatch(
             timeout = timeout,
             retryCount = retryCount,
             retryDelay = retryDelay,
-            // Allow non-quorum polling here. That might need to be changed as it could lead to unexpected behavior
-            // if multiple instances goes down or encounter network issue.
             waiter = ::waitMajorityJobs,
         ) { backend ->
             backend.listen(channelName = buildKey(channelSpace, name))
