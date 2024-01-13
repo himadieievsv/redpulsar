@@ -12,7 +12,6 @@ import io.mockk.verify
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -155,19 +154,16 @@ class LettuceCountDownLatchBackendTest {
         fun `listen produce value`(messageCount: Int) {
             val listener = slot<RedisPubSubListener<String, String>>()
             every { connection.addListener(capture(listener)) } returns Unit
-            val flow = countDownLatchBackend.listen("latch:channel:test")
-            val job =
-                CoroutineScope(CoroutineName("latch:channel:test")).launch {
-                    val first = flow.first()
-                    Assertions.assertEquals("open", first)
-                }
-            runBlocking { Thread.sleep(50) }
-            job.cancel()
-            runBlocking { Thread.sleep(50) }
-            repeat(messageCount) {
-                listener.captured.message("latch:channel:test", "test")
+            CoroutineScope(CoroutineName("latch:channel:test")).launch {
+                val result = countDownLatchBackend.listen("latch:channel:test")
+                Assertions.assertEquals("open", result)
             }
 
+            runBlocking { Thread.sleep(100) }
+            repeat(messageCount) {
+                listener.captured.message("latch:channel:test", "open")
+            }
+            runBlocking { Thread.sleep(100) }
             verify(exactly = 1) {
                 sync.subscribe(eq("latch:channel:test"))
                 sync.unsubscribe(eq("latch:channel:test"))
@@ -176,11 +172,9 @@ class LettuceCountDownLatchBackendTest {
 
         @Test
         fun `message not received`() {
-            val flow = countDownLatchBackend.listen("latch:channel:test")
-
             runBlocking {
                 assertThrows<TimeoutCancellationException> {
-                    withTimeout(100) { flow.first() }
+                    withTimeout(100) { countDownLatchBackend.listen("latch:channel:test") }
                 }
             }
             verify(exactly = 1) {

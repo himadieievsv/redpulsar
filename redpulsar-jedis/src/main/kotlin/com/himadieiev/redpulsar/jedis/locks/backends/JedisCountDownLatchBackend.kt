@@ -3,8 +3,8 @@ package com.himadieiev.redpulsar.jedis.locks.backends
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import redis.clients.jedis.JedisPubSub
@@ -64,8 +64,8 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
         }
     }
 
-    override fun listen(channelName: String): Flow<String> {
-        val flow =
+    override suspend fun listen(channelName: String): String? {
+        return failsafe(null) {
             callbackFlow {
                 val pubSub =
                     object : JedisPubSub() {
@@ -83,13 +83,13 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
                     try {
                         pubSub.unsubscribe(channelName)
                     } catch (e: Exception) {
-                        // supress unsubscribe errors as it might be uew to lost connection
+                        // suppress unsubscribe errors as it might be uew to lost connection
                         val logger = KotlinLogging.logger {}
                         logger.info { "Unsubscribe failed: ${e.message}" }
                     }
                     job.cancel()
                 }
-            }
-        return flow
+            }.first()
+        }
     }
 }
