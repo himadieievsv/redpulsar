@@ -159,7 +159,7 @@ class LettuceCountDownLatchBackendTest {
                 Assertions.assertEquals("open", result)
             }
 
-            runBlocking { Thread.sleep(100) }
+            runBlocking { Thread.sleep(200) }
             repeat(messageCount) {
                 listener.captured.message("latch:channel:test", "open")
             }

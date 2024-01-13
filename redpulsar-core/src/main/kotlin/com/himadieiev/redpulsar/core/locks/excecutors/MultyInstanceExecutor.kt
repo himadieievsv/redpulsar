@@ -14,7 +14,7 @@ import kotlin.system.measureTimeMillis
 /**
  * An algorithm for running closure on multiple remote instances proxied by [backends].
  * Each call will be executed in separate [Job] and wait for the result using one of two self-explanatory strategies:
- * [waitAllJobs] and [waitAnyJobs].
+ * [waitAllJobs] and [waitMajorityJobs].
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
  * clock drift.
