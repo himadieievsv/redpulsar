@@ -7,7 +7,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -23,7 +23,6 @@ import org.junit.jupiter.params.provider.ValueSource
 import redis.clients.jedis.JedisPubSub
 import redis.clients.jedis.UnifiedJedis
 import java.io.IOException
-import java.lang.Thread.sleep
 import java.time.Duration
 
 @Tag(TestTags.UNIT)
@@ -49,7 +48,8 @@ class JedisCountDownLatchBackendTest {
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } returns "OK"
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+            val callResult =
+                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", callResult)
             verify(exactly = 1) {
@@ -67,7 +67,8 @@ class JedisCountDownLatchBackendTest {
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } throws IOException("test exception")
-            val callResult = countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+            val callResult =
+                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertNull(callResult)
             verify(exactly = 1) {
@@ -130,16 +131,14 @@ class JedisCountDownLatchBackendTest {
             val pubSubSlot = slot<JedisPubSub>()
             val channel = slot<String>()
             every { redis.subscribe(capture(pubSubSlot), capture(channel)) } returns Unit
-            val flow = countDownLatchBackend.listen("latch:channel:test")
-            CoroutineScope(CoroutineName("latch:channel:test")).launch {
-                val first = flow.first()
-                assertEquals("open", first)
+            CoroutineScope(CoroutineName("test")).launch {
+                val result = countDownLatchBackend.listen("latch:channel:test")
+                assertEquals("open", result)
             }
-            runBlocking { sleep(100) }
+            runBlocking { delay(100) }
             repeat(messageCount) {
-                pubSubSlot.captured.onMessage("latch:channel:test", "test")
+                pubSubSlot.captured.onMessage("latch:channel:test", "open")
             }
-
             assertEquals("latch:channel:test", channel.captured)
             verify(exactly = 1) {
                 redis.subscribe(any<JedisPubSub>(), any<String>())
@@ -149,11 +148,10 @@ class JedisCountDownLatchBackendTest {
         @Test
         fun `message not received`() {
             every { redis.subscribe(any(), eq("latch:channel:test")) } returns Unit
-            val flow = countDownLatchBackend.listen("latch:channel:test")
 
             runBlocking {
                 assertThrows<TimeoutCancellationException> {
-                    withTimeout(100) { flow.first() }
+                    withTimeout(100) { countDownLatchBackend.listen("latch:channel:test") }
                 }
             }
             verify(exactly = 1) {

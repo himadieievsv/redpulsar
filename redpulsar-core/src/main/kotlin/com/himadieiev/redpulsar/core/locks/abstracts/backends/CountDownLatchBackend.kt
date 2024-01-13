@@ -1,7 +1,6 @@
 package com.himadieiev.redpulsar.core.locks.abstracts.backends
 
 import com.himadieiev.redpulsar.core.locks.abstracts.Backend
-import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
 /**
@@ -31,6 +30,6 @@ abstract class CountDownLatchBackend : Backend() {
 
     abstract fun checkCount(latchKeyName: String): Long?
 
-    /** Receive notification about count down latch is opened now. This is supposed to be a blocking call*/
-    abstract fun listen(channelName: String): Flow<String>
+    /** Receive notification about count down latch is opened now. */
+    abstract suspend fun listen(channelName: String): String?
 }

@@ -5,12 +5,10 @@ import com.himadieiev.redpulsar.core.locks.api.CallResult
 import com.himadieiev.redpulsar.core.locks.api.CountDownLatch
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
 import com.himadieiev.redpulsar.core.locks.excecutors.waitAnyJobs
-import com.himadieiev.redpulsar.core.utils.failsafe
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.time.Duration
@@ -198,10 +196,7 @@ class ListeningCountDownLatch(
             // if multiple instances goes down or encounter network issue.
             waiter = ::waitAnyJobs,
         ) { backend ->
-            failsafe(null) {
-                val flow = backend.listen(channelName = buildKey(channelSpace, name))
-                flow.first()
-            }
+            backend.listen(channelName = buildKey(channelSpace, name))
         }
     }
 

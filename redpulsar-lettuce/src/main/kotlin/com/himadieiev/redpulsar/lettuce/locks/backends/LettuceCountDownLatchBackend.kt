@@ -6,8 +6,8 @@ import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.pubsub.RedisPubSubListener
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -78,8 +78,8 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
         }
     }
 
-    override fun listen(channelName: String): Flow<String> {
-        val flow =
+    override suspend fun listen(channelName: String): String? {
+        return failsafe(null) {
             callbackFlow {
                 val pubSub =
                     object : RedisPubSubListener<String, String> {
@@ -138,7 +138,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
                 awaitClose {
                     job.cancel()
                 }
-            }
-        return flow
+            }.first()
+        }
     }
 }
