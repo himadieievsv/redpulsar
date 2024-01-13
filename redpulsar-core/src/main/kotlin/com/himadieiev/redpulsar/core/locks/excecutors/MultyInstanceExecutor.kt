@@ -17,14 +17,22 @@ import kotlin.system.measureTimeMillis
  * [waitAllJobs] and [waitAnyJobs].
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
- * clok drift.
+ * clock drift.
  * It returns list of results from each instance or empty list if either time validity wasn't met or operation was
  * failing on majority of instances.
  *
  * Coroutine used by callee must be cooperative coroutine (not blocking).
  * In order to cancel jobs forcefully, use [withTimeoutInThread] instead.
+ *
+ * @param backends [List] of [Backend] instances.
+ * @param scope [CoroutineScope] the scope to run coroutine in.
+ * @param timeout [Duration] the maximum time to wait.
+ * @param defaultDrift [Duration] the default clock drift.
+ * @param cleanUp [Function] the function to clean up resources on each backend.
+ * @param waiter [Function] the function to wait for results.
+ * @param callee [Function] the function to call on each backend.
  */
-inline fun <T : Backend, R> multyInstanceExecute(
+inline fun <T : Backend, R> multiInstanceExecute(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
@@ -75,7 +83,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     return withRetry(retryCount = retryCount, retryDelay = retryDelay) {
-        return@withRetry multyInstanceExecute(
+        return@withRetry multiInstanceExecute(
             backends = backends,
             scope = scope,
             timeout = timeout,

@@ -15,6 +15,9 @@ abstract class AbstractLock : Lock {
 
     /**
      * Locks the resource on the given Redis instance.
+     * @param backend [LocksBackend] the Redis instance to lock the resource on.
+     * @param resourceName [String] the name of the resource for which lock key was created.
+     * @param ttl [Duration] the time to live of the lock.
      */
     protected open fun lockInstance(
         backend: LocksBackend,
@@ -26,6 +29,8 @@ abstract class AbstractLock : Lock {
 
     /**
      * Unlocks the resource on the given Redis instance.
+     * @param backend [LocksBackend] the Redis instance to unlock the resource on.
+     * @param resourceName [String] the name of the resource for which lock key was created.
      */
     protected open fun unlockInstance(
         backend: LocksBackend,
