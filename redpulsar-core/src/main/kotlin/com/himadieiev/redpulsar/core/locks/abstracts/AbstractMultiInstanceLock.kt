@@ -2,7 +2,9 @@ package com.himadieiev.redpulsar.core.locks.abstracts
 
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
+import com.himadieiev.redpulsar.core.locks.excecutors.waitAllJobs
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import java.time.Duration
 
 /**
@@ -31,19 +33,22 @@ abstract class AbstractMultiInstanceLock(
         resourceName: String,
         ttl: Duration,
     ): Boolean {
-        return backends.executeWithRetry(
-            scope = scope,
-            timeout = ttl,
-            defaultDrift = Duration.ofMillis(3L * backends.size),
-            retryCount = retryCount,
-            retryDelay = retryDelay,
-            cleanUp = { backend ->
-                unlockInstance(backend, resourceName)
-            },
-            callee = { backend ->
-                lockInstance(backend, resourceName, ttl)
-            },
-        ).isNotEmpty()
+        return runBlocking {
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = ttl,
+                defaultDrift = Duration.ofMillis(3L * backends.size),
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                cleanUp = { backend ->
+                    unlockInstance(backend, resourceName)
+                },
+                waiter = ::waitAllJobs,
+                callee = { backend ->
+                    lockInstance(backend, resourceName, ttl)
+                },
+            )
+        }.isNotEmpty()
     }
 
     /**
@@ -52,16 +57,19 @@ abstract class AbstractMultiInstanceLock(
      * @return [Boolean] true if the lock was released, false otherwise.
      */
     override fun unlock(resourceName: String): Boolean {
-        return backends.executeWithRetry(
-            scope = scope,
-            timeout = Duration.ofSeconds(1),
-            defaultDrift = Duration.ofMillis(3L * backends.size),
-            retryCount = retryCount,
-            retryDelay = retryDelay,
-            callee = { backend ->
-                unlockInstance(backend, resourceName)
-            },
-        ).isNotEmpty()
+        return runBlocking {
+            backends.executeWithRetry(
+                scope = scope,
+                timeout = Duration.ofSeconds(1),
+                defaultDrift = Duration.ofMillis(3L * backends.size),
+                retryCount = retryCount,
+                retryDelay = retryDelay,
+                waiter = ::waitAllJobs,
+                callee = { backend ->
+                    unlockInstance(backend, resourceName)
+                },
+            )
+        }.isNotEmpty()
     }
 
     protected fun backendSize(): Int = backends.size

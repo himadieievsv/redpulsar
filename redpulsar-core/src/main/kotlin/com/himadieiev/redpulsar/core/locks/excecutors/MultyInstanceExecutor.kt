@@ -6,7 +6,6 @@ import com.himadieiev.redpulsar.core.utils.withTimeoutInThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import java.util.Collections
 import kotlin.system.measureTimeMillis
@@ -32,13 +31,13 @@ import kotlin.system.measureTimeMillis
  * @param waiter [Function] the function to wait for results.
  * @param callee [Function] the function to call on each backend.
  */
-inline fun <T : Backend, R> multiInstanceExecute(
+suspend inline fun <T : Backend, R> multiInstanceExecute(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
+    crossinline waiter: suspend (jobs: List<Job>) -> Unit,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     val jobs = mutableListOf<Job>()
@@ -57,7 +56,7 @@ inline fun <T : Backend, R> multiInstanceExecute(
                     },
                 )
             }
-            runBlocking(scope.coroutineContext) { waiter(jobs) }
+            waiter(jobs)
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
@@ -65,13 +64,13 @@ inline fun <T : Backend, R> multiInstanceExecute(
         backends.forEach { backend ->
             cleanUpJobs.add(scope.launch { cleanUp(backend) })
         }
-        runBlocking(scope.coroutineContext) { waitAllJobs(cleanUpJobs) }
+        waitAllJobs(cleanUpJobs)
         return emptyList()
     }
     return results
 }
 
-inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
+suspend inline fun <T : Backend, R> multiInstanceExecuteWithRetry(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
@@ -79,7 +78,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
+    crossinline waiter: suspend (jobs: List<Job>) -> Unit,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     return withRetry(retryCount = retryCount, retryDelay = retryDelay) {
@@ -95,17 +94,17 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     }
 }
 
-fun <T : Backend, R> List<T>.executeWithRetry(
+suspend fun <T : Backend, R> List<T>.executeWithRetry(
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     cleanUp: (backend: T) -> Unit = { _ -> },
-    waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
+    waiter: suspend (jobs: List<Job>) -> Unit,
     callee: suspend (backend: T) -> R,
 ): List<R> {
-    return multyInstanceExecuteWithRetry(
+    return multiInstanceExecuteWithRetry(
         backends = this,
         scope = scope,
         timeout = timeout,

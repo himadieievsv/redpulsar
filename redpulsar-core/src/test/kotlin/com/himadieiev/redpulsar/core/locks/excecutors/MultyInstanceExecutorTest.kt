@@ -7,6 +7,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -33,13 +34,15 @@ class MultyInstanceExecutorTest {
         backends.forEach { backend -> every { backend.test() } returns "OK" }
 
         val result =
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waiter = ::waitAllJobs,
-            ) { backend ->
-                backend.test()
+            runBlocking {
+                multiInstanceExecute(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    waiter = ::waitAllJobs,
+                ) { backend ->
+                    backend.test()
+                }
             }
 
         assertEquals(number, result.size)
@@ -57,13 +60,15 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waiter = ::waitAllJobs,
-            ) { backend ->
-                backend.test()
+            runBlocking {
+                multiInstanceExecute(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    waiter = ::waitAllJobs,
+                ) { backend ->
+                    backend.test()
+                }
             }
 
         assertEquals(emptyList<String>(), result)
@@ -81,13 +86,15 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waiter = ::waitAllJobs,
-            ) { backend ->
-                backend.test()
+            runBlocking {
+                multiInstanceExecute(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    waiter = ::waitAllJobs,
+                ) { backend ->
+                    backend.test()
+                }
             }
 
         assertTrue(number / 2 + 1 <= result.size)
@@ -101,12 +108,14 @@ class MultyInstanceExecutorTest {
         backends.forEach { backend -> every { backend.test() } returns "OK" }
 
         val result =
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waiter = ::waitMajorityJobs,
-            ) { backend -> backend.test() }
+            runBlocking {
+                multiInstanceExecute(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    waiter = ::waitMajorityJobs,
+                ) { backend -> backend.test() }
+            }
 
         assertTrue(number / 2 + 1 <= result.size)
         verify(exactly = 1) { backends.forEach { backend -> backend.test() } }
@@ -122,12 +131,14 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waiter = ::waitMajorityJobs,
-            ) { backend -> backend.test() }
+            runBlocking {
+                multiInstanceExecute(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    waiter = ::waitMajorityJobs,
+                ) { backend -> backend.test() }
+            }
 
         assertTrue(number / 2 + 1 <= result.size)
         verify(exactly = 1) { backends.forEach { backend -> backend.test() } }
@@ -144,15 +155,17 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multyInstanceExecuteWithRetry(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                retryCount = 3,
-                retryDelay = Duration.ofMillis(1),
-                waiter = ::waitAllJobs,
-            ) { backend ->
-                backend.test()
+            runBlocking {
+                multiInstanceExecuteWithRetry(
+                    backends = backends,
+                    scope = scope,
+                    timeout = Duration.ofSeconds(1),
+                    retryCount = 3,
+                    retryDelay = Duration.ofMillis(1),
+                    waiter = ::waitAllJobs,
+                ) { backend ->
+                    backend.test()
+                }
             }
 
         assertEquals(emptyList<String>(), result)
