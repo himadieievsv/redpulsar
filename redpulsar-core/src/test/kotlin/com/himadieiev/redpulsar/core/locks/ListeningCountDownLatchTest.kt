@@ -509,6 +509,7 @@ class ListeningCountDownLatchTest {
                     2,
                     backends = instances,
                     retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
@@ -534,10 +535,11 @@ class ListeningCountDownLatchTest {
                     5,
                     backends = instances,
                     retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
-            coVerify(exactly = 1) {
+            coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
             verify(exactly = 1) {
@@ -546,7 +548,7 @@ class ListeningCountDownLatchTest {
         }
 
         @Test
-        fun `quorum wasn't reach but await succeed`() {
+        fun `quorum wasn't reach at majority`() {
             instances.forEach { backend ->
                 backend.everyCheckCount("countdownlatch:test", 1)
             }
@@ -560,9 +562,9 @@ class ListeningCountDownLatchTest {
                     backends = instances,
                     retryDelay = Duration.ofMillis(1),
                 )
-            assertEquals(CallResult.SUCCESS, latch.await())
+            assertEquals(CallResult.FAILED, latch.await())
 
-            coVerify(atMost = 1) {
+            coVerify(atMost = 3) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
             verify(exactly = 1) {

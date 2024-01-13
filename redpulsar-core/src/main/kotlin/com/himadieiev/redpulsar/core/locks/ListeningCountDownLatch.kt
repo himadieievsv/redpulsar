@@ -4,7 +4,7 @@ import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBack
 import com.himadieiev.redpulsar.core.locks.api.CallResult
 import com.himadieiev.redpulsar.core.locks.api.CountDownLatch
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
-import com.himadieiev.redpulsar.core.locks.excecutors.waitAnyJobs
+import com.himadieiev.redpulsar.core.locks.excecutors.waitMajorityJobs
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -194,7 +194,7 @@ class ListeningCountDownLatch(
             retryDelay = retryDelay,
             // Allow non-quorum polling here. That might need to be changed as it could lead to unexpected behavior
             // if multiple instances goes down or encounter network issue.
-            waiter = ::waitAnyJobs,
+            waiter = ::waitMajorityJobs,
         ) { backend ->
             backend.listen(channelName = buildKey(channelSpace, name))
         }

@@ -14,7 +14,7 @@ import kotlin.system.measureTimeMillis
 /**
  * An algorithm for running closure on multiple remote instances proxied by [backends].
  * Each call will be executed in separate [Job] and wait for the result using one of two self-explanatory strategies:
- * [waitAllJobs] and [waitAnyJobs].
+ * [waitAllJobs] and [waitMajorityJobs].
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
  * clock drift.
@@ -38,7 +38,7 @@ inline fun <T : Backend, R> multiInstanceExecute(
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
+    crossinline waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     val jobs = mutableListOf<Job>()
@@ -57,7 +57,7 @@ inline fun <T : Backend, R> multiInstanceExecute(
                     },
                 )
             }
-            runBlocking(scope.coroutineContext) { waiter(jobs, results) }
+            runBlocking(scope.coroutineContext) { waiter(jobs) }
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
     if (results.size < quorum || validity < 0) {
@@ -65,7 +65,7 @@ inline fun <T : Backend, R> multiInstanceExecute(
         backends.forEach { backend ->
             cleanUpJobs.add(scope.launch { cleanUp(backend) })
         }
-        runBlocking(scope.coroutineContext) { waitAllJobs(cleanUpJobs, Collections.emptyList<String>()) }
+        runBlocking(scope.coroutineContext) { waitAllJobs(cleanUpJobs) }
         return emptyList()
     }
     return results
@@ -79,7 +79,7 @@ inline fun <T : Backend, R> multyInstanceExecuteWithRetry(
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
+    crossinline waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     return withRetry(retryCount = retryCount, retryDelay = retryDelay) {
@@ -102,7 +102,7 @@ fun <T : Backend, R> List<T>.executeWithRetry(
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     cleanUp: (backend: T) -> Unit = { _ -> },
-    waiter: suspend (jobs: List<Job>, results: MutableList<R>) -> Unit = ::waitAllJobs,
+    waiter: suspend (jobs: List<Job>) -> Unit = ::waitAllJobs,
     callee: suspend (backend: T) -> R,
 ): List<R> {
     return multyInstanceExecuteWithRetry(
