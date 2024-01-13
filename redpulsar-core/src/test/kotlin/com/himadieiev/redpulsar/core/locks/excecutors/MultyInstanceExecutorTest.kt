@@ -34,7 +34,7 @@ class MultyInstanceExecutorTest {
         backends.forEach { backend -> every { backend.test() } returns "OK" }
 
         val result =
-            multyInstanceExecute(
+            multiInstanceExecute(
                 backends = backends,
                 scope = scope,
                 timeout = Duration.ofSeconds(1),
@@ -58,7 +58,7 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multyInstanceExecute(
+            multiInstanceExecute(
                 backends = backends,
                 scope = scope,
                 timeout = Duration.ofSeconds(1),
@@ -82,7 +82,7 @@ class MultyInstanceExecutorTest {
         }
 
         val result =
-            multyInstanceExecute(
+            multiInstanceExecute(
                 backends = backends,
                 scope = scope,
                 timeout = Duration.ofSeconds(1),
@@ -102,7 +102,7 @@ class MultyInstanceExecutorTest {
         backends.forEach { backend -> every { backend.test() } returns "OK" }
 
         val result =
-            multyInstanceExecute(
+            multiInstanceExecute(
                 backends = backends,
                 scope = scope,
                 timeout = Duration.ofSeconds(1),
@@ -121,7 +121,7 @@ class MultyInstanceExecutorTest {
         every { backends[Random.nextInt(0, number)].test() } returns "OK"
 
         val result =
-            multyInstanceExecute(
+            multiInstanceExecute(
                 backends = backends,
                 scope = scope,
                 timeout = Duration.ofSeconds(1),
