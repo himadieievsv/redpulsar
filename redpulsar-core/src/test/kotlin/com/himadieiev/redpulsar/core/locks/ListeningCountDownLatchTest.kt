@@ -509,6 +509,7 @@ class ListeningCountDownLatchTest {
                     2,
                     backends = instances,
                     retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
@@ -534,6 +535,7 @@ class ListeningCountDownLatchTest {
                     5,
                     backends = instances,
                     retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
