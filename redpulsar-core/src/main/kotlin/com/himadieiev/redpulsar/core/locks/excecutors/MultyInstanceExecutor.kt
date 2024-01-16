@@ -6,6 +6,7 @@ import com.himadieiev.redpulsar.core.utils.withTimeoutInThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import java.time.Duration
 import java.util.Collections
 import kotlin.system.measureTimeMillis
@@ -59,6 +60,9 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
             waiter(jobs)
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
+    val logger = KotlinLogging.logger { }
+    logger.info { "Validity: $validity, Result size: ${results.size}" }
+    logger.info { "Results: $results" }
     if (results.size < quorum || validity < 0) {
         val cleanUpJobs = mutableListOf<Job>()
         backends.forEach { backend ->
