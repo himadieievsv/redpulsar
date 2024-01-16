@@ -50,7 +50,6 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
     val jobs = mutableListOf<Deferred<R>>()
     val quorum = backends.size / 2 + 1
     val successCount = requiredToSuccessCount(waitStrategy, backends.size)
-    val failedCount = enoughToFailCount(waitStrategy, backends.size)
     val results = Collections.synchronizedList(mutableListOf<R>())
     val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
     val timeDiff =
@@ -75,7 +74,7 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
                     }
                 }
             }
-            while (succeed.get() < successCount && failed.get() < failedCount) {
+            while (succeed.get() < successCount && failed.get() < quorum) {
                 yield()
             }
         }
