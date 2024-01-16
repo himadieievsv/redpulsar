@@ -4,17 +4,23 @@ import com.himadieiev.redpulsar.core.locks.abstracts.Backend
 import com.himadieiev.redpulsar.core.utils.withRetry
 import com.himadieiev.redpulsar.core.utils.withTimeoutInThread
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import mu.KotlinLogging
 import java.time.Duration
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 
 /**
  * An algorithm for running closure on multiple remote instances proxied by [backends].
  * Each call will be executed in separate [Job] and wait for the result using one of two self-explanatory strategies:
- * [waitAllJobs] and [waitMajorityJobs].
+ * [WaitStrategy.ALL] and [WaitStrategy.MAJORITY].
  * Also, it checks whether the result is successful on majority (depends on waiting strategy) of instances and time
  * spend for getting results is not exceeding some reasonable time difference using [timeout] and
  * clock drift.
@@ -32,32 +38,45 @@ import kotlin.system.measureTimeMillis
  * @param waiter [Function] the function to wait for results.
  * @param callee [Function] the function to call on each backend.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 suspend inline fun <T : Backend, R> multiInstanceExecute(
     backends: List<T>,
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
+    waitStrategy: WaitStrategy = WaitStrategy.ALL,
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>) -> Unit,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
-    val jobs = mutableListOf<Job>()
-    val quorum: Int = backends.size / 2 + 1
+    val jobs = mutableListOf<Deferred<R>>()
+    val quorum = backends.size / 2 + 1
+    val successCount = requiredToSuccessCount(waitStrategy, backends.size)
+    val failedCount = enoughToFailCount(waitStrategy, backends.size)
     val results = Collections.synchronizedList(mutableListOf<R>())
     val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
     val timeDiff =
         measureTimeMillis {
             backends.forEach { backend ->
                 jobs.add(
-                    scope.launch {
-                        val result = callee(backend)
-                        if (result != null) {
-                            results.add(result)
-                        }
-                    },
+                    scope.async { callee(backend) },
                 )
             }
-            waiter(jobs)
+            val failed = AtomicInteger(0)
+            jobs.forEach { job ->
+                job.invokeOnCompletion { cause ->
+                    if (cause == null) {
+                        val result = job.getCompleted()
+                        if (result != null) {
+                            results.add(result)
+                            return@invokeOnCompletion
+                        }
+                    }
+                    failed.incrementAndGet()
+                }
+            }
+            while (results.size < successCount && failed.get() < failedCount) {
+                yield()
+            }
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
     val logger = KotlinLogging.logger { }
@@ -68,7 +87,7 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
         backends.forEach { backend ->
             cleanUpJobs.add(scope.launch { cleanUp(backend) })
         }
-        waitAllJobs(cleanUpJobs)
+        cleanUpJobs.joinAll()
         return emptyList()
     }
     return results
@@ -81,8 +100,8 @@ suspend inline fun <T : Backend, R> multiInstanceExecuteWithRetry(
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
+    waitStrategy: WaitStrategy = WaitStrategy.ALL,
     crossinline cleanUp: (backend: T) -> Unit = { _ -> },
-    crossinline waiter: suspend (jobs: List<Job>) -> Unit,
     crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     return withRetry(retryCount = retryCount, retryDelay = retryDelay) {
@@ -91,7 +110,7 @@ suspend inline fun <T : Backend, R> multiInstanceExecuteWithRetry(
             scope = scope,
             timeout = timeout,
             defaultDrift = defaultDrift,
-            waiter = waiter,
+            waitStrategy = waitStrategy,
             callee = callee,
             cleanUp = cleanUp,
         )
@@ -105,7 +124,7 @@ suspend fun <T : Backend, R> List<T>.executeWithRetry(
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
     cleanUp: (backend: T) -> Unit = { _ -> },
-    waiter: suspend (jobs: List<Job>) -> Unit,
+    waitStrategy: WaitStrategy = WaitStrategy.ALL,
     callee: suspend (backend: T) -> R,
 ): List<R> {
     return multiInstanceExecuteWithRetry(
@@ -115,7 +134,7 @@ suspend fun <T : Backend, R> List<T>.executeWithRetry(
         defaultDrift = defaultDrift,
         retryCount = retryCount,
         retryDelay = retryDelay,
-        waiter = waiter,
+        waitStrategy = waitStrategy,
         callee = callee,
         cleanUp = cleanUp,
     )
