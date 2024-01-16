@@ -34,8 +34,8 @@ import kotlin.system.measureTimeMillis
  * @param scope [CoroutineScope] the scope to run coroutine in.
  * @param timeout [Duration] the maximum time to wait.
  * @param defaultDrift [Duration] the default clock drift.
+ * @param waitStrategy [WaitStrategy] the strategy to wait for results.
  * @param cleanUp [Function] the function to clean up resources on each backend.
- * @param waiter [Function] the function to wait for results.
  * @param callee [Function] the function to call on each backend.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
