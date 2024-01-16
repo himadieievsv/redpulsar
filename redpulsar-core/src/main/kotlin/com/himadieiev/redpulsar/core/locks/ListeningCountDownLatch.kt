@@ -146,7 +146,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration,
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waitStrategy = WaitStrategy.MAJORITY,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.count(
                     latchKeyName = buildKey(name),
@@ -167,7 +167,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration,
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waitStrategy = WaitStrategy.MAJORITY,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.undoCount(
                     latchKeyName = buildKey(name),
@@ -185,7 +185,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration.multipliedBy(2),
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waitStrategy = WaitStrategy.MAJORITY,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.checkCount(latchKeyName = buildKey(name))
             }

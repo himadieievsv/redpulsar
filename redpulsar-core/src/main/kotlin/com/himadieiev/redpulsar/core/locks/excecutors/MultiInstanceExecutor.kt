@@ -14,7 +14,6 @@ import kotlinx.coroutines.yield
 import java.time.Duration
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.system.measureTimeMillis
 
 /**
  * An algorithm for running closure on multiple remote instances proxied by [backends].
@@ -49,36 +48,38 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
 ): List<R> {
     val jobs = mutableListOf<Deferred<R>>()
     val quorum = backends.size / 2 + 1
-    val successCount = requiredToSuccessCount(waitStrategy, backends.size)
     val results = Collections.synchronizedList(mutableListOf<R>())
     val clockDrift = (timeout.toMillis() * 0.01).toLong() + defaultDrift.toMillis()
-    val timeDiff =
-        measureTimeMillis {
-            backends.forEach { backend ->
-                jobs.add(
-                    scope.async { callee(backend) },
-                )
-            }
-            val succeed = AtomicInteger(0)
-            val failed = AtomicInteger(0)
-            jobs.forEach { job ->
-                job.invokeOnCompletion { cause ->
-                    if (cause == null) {
-                        succeed.incrementAndGet()
-                        val result = job.getCompleted()
-                        if (result != null) {
-                            results.add(result)
-                        }
-                    } else {
-                        failed.incrementAndGet()
-                    }
+    val t1 = System.currentTimeMillis()
+    backends.forEach { backend ->
+        jobs.add(
+            scope.async { callee(backend) },
+        )
+    }
+    val succeed = AtomicInteger(0)
+    val failed = AtomicInteger(0)
+    jobs.forEach { job ->
+        job.invokeOnCompletion { cause ->
+            if (cause == null) {
+                val result = job.getCompleted()
+                if (result != null) {
+                    results.add(result)
                 }
-            }
-            while (succeed.get() < successCount && failed.get() < quorum) {
-                yield()
+                succeed.incrementAndGet()
+            } else {
+                failed.incrementAndGet()
             }
         }
-    val validity = timeout.toMillis() - timeDiff - clockDrift
+    }
+    while (succeed.get() + failed.get() < backends.size) {
+        if (waitStrategy == WaitStrategy.MAJORITY && results.size >= quorum) {
+            jobs.forEach(Job::cancel)
+            break
+        }
+        yield()
+    }
+    val t2 = System.currentTimeMillis()
+    val validity = timeout.toMillis() - (t2 - t1) - clockDrift
     if (results.size < quorum || validity < 0) {
         val cleanUpJobs = mutableListOf<Job>()
         backends.forEach { backend ->
