@@ -60,20 +60,22 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
                     scope.async { callee(backend) },
                 )
             }
+            val succeed = AtomicInteger(0)
             val failed = AtomicInteger(0)
             jobs.forEach { job ->
                 job.invokeOnCompletion { cause ->
                     if (cause == null) {
+                        succeed.incrementAndGet()
                         val result = job.getCompleted()
                         if (result != null) {
                             results.add(result)
-                            return@invokeOnCompletion
                         }
+                    } else {
+                        failed.incrementAndGet()
                     }
-                    failed.incrementAndGet()
                 }
             }
-            while (results.size < successCount && failed.get() < failedCount) {
+            while (succeed.get() < successCount && failed.get() < failedCount) {
                 yield()
             }
         }
