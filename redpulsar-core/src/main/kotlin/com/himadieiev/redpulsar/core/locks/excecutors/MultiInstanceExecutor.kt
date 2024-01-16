@@ -11,7 +11,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
-import mu.KotlinLogging
 import java.time.Duration
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
@@ -79,9 +78,6 @@ suspend inline fun <T : Backend, R> multiInstanceExecute(
             }
         }
     val validity = timeout.toMillis() - timeDiff - clockDrift
-    val logger = KotlinLogging.logger { }
-    logger.info { "Validity: $validity, Result size: ${results.size}" }
-    logger.info { "Results: $results" }
     if (results.size < quorum || validity < 0) {
         val cleanUpJobs = mutableListOf<Job>()
         backends.forEach { backend ->
