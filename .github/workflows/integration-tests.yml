@@ -52,4 +52,4 @@ jobs:
           :redpulsar-core:test \
           :redpulsar-jedis:test \
           :redpulsar-lettuce:test \
-          -DexcludeTags="unit"
+          -DexcludeTags="unit" -i
