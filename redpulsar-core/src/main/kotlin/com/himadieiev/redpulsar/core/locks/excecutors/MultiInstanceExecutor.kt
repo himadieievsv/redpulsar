@@ -115,15 +115,15 @@ suspend inline fun <T : Backend, R> multiInstanceExecuteWithRetry(
     }
 }
 
-suspend fun <T : Backend, R> List<T>.executeWithRetry(
+suspend inline fun <T : Backend, R> List<T>.executeWithRetry(
     scope: CoroutineScope,
     timeout: Duration,
     defaultDrift: Duration = Duration.ofMillis(3),
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
-    cleanUp: (backend: T) -> Unit = { _ -> },
     waitStrategy: WaitStrategy = WaitStrategy.ALL,
-    callee: suspend (backend: T) -> R,
+    crossinline cleanUp: (backend: T) -> Unit = { _ -> },
+    crossinline callee: suspend (backend: T) -> R,
 ): List<R> {
     return multiInstanceExecuteWithRetry(
         backends = this,
