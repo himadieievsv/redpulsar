@@ -3,6 +3,8 @@ package com.himadieiev.redpulsar.core.locks
 import TestTags
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.locks.api.CallResult
+import io.mockk.Call
+import io.mockk.MockKAnswerScope
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -548,6 +550,76 @@ class ListeningCountDownLatchTest {
         }
 
         @Test
+        fun `one instance will continue to wait`() {
+            instances.forEach { backend ->
+                backend.everyCheckCount("countdownlatch:test", 1)
+            }
+            backend1.everyListen {
+                delay(50)
+                "open"
+            }
+            backend2.everyListen {
+                delay(2000)
+                null
+            }
+            backend3.everyListen {
+                delay(100)
+                "open"
+            }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    5,
+                    backends = instances,
+                    retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
+                )
+            assertEquals(CallResult.SUCCESS, latch.await(Duration.ofSeconds(1)))
+
+            coVerify(atMost = 1) {
+                instances.forEach { backend -> backend.listen(any()) }
+            }
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.checkCount(any()) }
+            }
+        }
+
+        @Test
+        fun `failed instance return value first`() {
+            instances.forEach { backend ->
+                backend.everyCheckCount("countdownlatch:test", 1)
+            }
+            backend1.everyListen {
+                delay(100)
+                "open"
+            }
+            backend2.everyListen {
+                delay(200)
+                "open"
+            }
+            backend3.everyListen {
+                delay(50)
+                null
+            }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    5,
+                    backends = instances,
+                    retryDelay = Duration.ofMillis(1),
+                    retryCount = 1,
+                )
+            assertEquals(CallResult.SUCCESS, latch.await(Duration.ofSeconds(1)))
+
+            coVerify(atMost = 1) {
+                instances.forEach { backend -> backend.listen(any()) }
+            }
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.checkCount(any()) }
+            }
+        }
+
+        @Test
         fun `quorum wasn't reach at majority`() {
             instances.forEach { backend ->
                 backend.everyCheckCount("countdownlatch:test", 1)
@@ -675,6 +747,13 @@ class ListeningCountDownLatchTest {
         coEvery {
             backend.listen(eq("countdownlatch:channels:test"))
         } returns returnVal
+    }
+
+    private fun CountDownLatchBackend.everyListen(answer: suspend MockKAnswerScope<String?, String?>.(Call) -> String?) {
+        val backend = this
+        coEvery {
+            backend.listen(eq("countdownlatch:channels:test"))
+        } coAnswers answer
     }
 
     private fun CountDownLatchBackend.everyCheckCount(

@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.time.Duration
 
 @Tag(TestTags.UNIT)
-class MultyInstanceExecutorTest {
+class MultiInstanceExecutorTest {
     private var backends: List<TestBackend> = emptyList()
     private lateinit var scope: CoroutineScope
 
@@ -39,7 +39,7 @@ class MultyInstanceExecutorTest {
                     backends = backends,
                     scope = scope,
                     timeout = Duration.ofSeconds(1),
-                    waiter = ::waitAllJobs,
+                    waitStrategy = WaitStrategy.ALL,
                 ) { backend ->
                     backend.test()
                 }
@@ -50,7 +50,7 @@ class MultyInstanceExecutorTest {
     }
 
     @ParameterizedTest(name = "quorum instances are down {0} instances")
-    @ValueSource(ints = [2, 3, 4, 5, 7, 10])
+    @ValueSource(ints = [1, 2, 3, 4, 5, 7, 10])
     fun `quorum instances are down`(number: Int) {
         val quorum = number / 2 + 1
         backends = createBackends(number)
@@ -65,7 +65,7 @@ class MultyInstanceExecutorTest {
                     backends = backends,
                     scope = scope,
                     timeout = Duration.ofSeconds(1),
-                    waiter = ::waitAllJobs,
+                    waitStrategy = WaitStrategy.ALL,
                 ) { backend ->
                     backend.test()
                 }
@@ -76,7 +76,7 @@ class MultyInstanceExecutorTest {
     }
 
     @ParameterizedTest(name = "non quorum instances are down {0} instances")
-    @ValueSource(ints = [2, 3, 4, 5, 7, 10])
+    @ValueSource(ints = [1, 2, 3, 4, 5, 7, 10])
     fun `non quorum instances are down`(number: Int) {
         val quorum = number / 2 + 1
         backends = createBackends(number)
@@ -91,7 +91,7 @@ class MultyInstanceExecutorTest {
                     backends = backends,
                     scope = scope,
                     timeout = Duration.ofSeconds(1),
-                    waiter = ::waitAllJobs,
+                    waitStrategy = WaitStrategy.ALL,
                 ) { backend ->
                     backend.test()
                 }
@@ -113,7 +113,7 @@ class MultyInstanceExecutorTest {
                     backends = backends,
                     scope = scope,
                     timeout = Duration.ofSeconds(1),
-                    waiter = ::waitMajorityJobs,
+                    waitStrategy = WaitStrategy.MAJORITY,
                 ) { backend -> backend.test() }
             }
 
@@ -136,7 +136,7 @@ class MultyInstanceExecutorTest {
                     backends = backends,
                     scope = scope,
                     timeout = Duration.ofSeconds(1),
-                    waiter = ::waitMajorityJobs,
+                    waitStrategy = WaitStrategy.MAJORITY,
                 ) { backend -> backend.test() }
             }
 
@@ -145,7 +145,7 @@ class MultyInstanceExecutorTest {
     }
 
     @ParameterizedTest(name = "retry on non quorum instance count is down {0} instances")
-    @ValueSource(ints = [2, 3, 4, 5, 7, 10])
+    @ValueSource(ints = [1, 2, 3, 4, 5, 7, 10])
     fun `retry on non quorum instance count is down`(number: Int) {
         val quorum = number / 2 + 1
         backends = createBackends(number)
@@ -162,7 +162,7 @@ class MultyInstanceExecutorTest {
                     timeout = Duration.ofSeconds(1),
                     retryCount = 3,
                     retryDelay = Duration.ofMillis(1),
-                    waiter = ::waitAllJobs,
+                    waitStrategy = WaitStrategy.ALL,
                 ) { backend ->
                     backend.test()
                 }

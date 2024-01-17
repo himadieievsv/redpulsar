@@ -1,8 +1,8 @@
 package com.himadieiev.redpulsar.core.locks.abstracts
 
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
+import com.himadieiev.redpulsar.core.locks.excecutors.WaitStrategy
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
-import com.himadieiev.redpulsar.core.locks.excecutors.waitAllJobs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import java.time.Duration
@@ -43,7 +43,7 @@ abstract class AbstractMultiInstanceLock(
                 cleanUp = { backend ->
                     unlockInstance(backend, resourceName)
                 },
-                waiter = ::waitAllJobs,
+                waitStrategy = WaitStrategy.ALL,
                 callee = { backend ->
                     lockInstance(backend, resourceName, ttl)
                 },
@@ -64,7 +64,7 @@ abstract class AbstractMultiInstanceLock(
                 defaultDrift = Duration.ofMillis(3L * backends.size),
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waiter = ::waitAllJobs,
+                waitStrategy = WaitStrategy.ALL,
                 callee = { backend ->
                     unlockInstance(backend, resourceName)
                 },

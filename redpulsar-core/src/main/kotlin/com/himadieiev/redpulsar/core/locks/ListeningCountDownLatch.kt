@@ -3,9 +3,8 @@ package com.himadieiev.redpulsar.core.locks
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.locks.api.CallResult
 import com.himadieiev.redpulsar.core.locks.api.CountDownLatch
+import com.himadieiev.redpulsar.core.locks.excecutors.WaitStrategy
 import com.himadieiev.redpulsar.core.locks.excecutors.executeWithRetry
-import com.himadieiev.redpulsar.core.locks.excecutors.waitAllJobs
-import com.himadieiev.redpulsar.core.locks.excecutors.waitMajorityJobs
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -147,7 +146,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration,
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waiter = ::waitAllJobs,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.count(
                     latchKeyName = buildKey(name),
@@ -168,7 +167,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration,
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waiter = ::waitAllJobs,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.undoCount(
                     latchKeyName = buildKey(name),
@@ -186,7 +185,7 @@ class ListeningCountDownLatch(
                 timeout = maxDuration.multipliedBy(2),
                 retryCount = retryCount,
                 retryDelay = retryDelay,
-                waiter = ::waitAllJobs,
+                waitStrategy = WaitStrategy.ALL,
             ) { backend ->
                 backend.checkCount(latchKeyName = buildKey(name))
             }
@@ -202,7 +201,7 @@ class ListeningCountDownLatch(
             timeout = timeout,
             retryCount = retryCount,
             retryDelay = retryDelay,
-            waiter = ::waitMajorityJobs,
+            waitStrategy = WaitStrategy.MAJORITY,
         ) { backend ->
             backend.listen(channelName = buildKey(channelSpace, name))
         }
