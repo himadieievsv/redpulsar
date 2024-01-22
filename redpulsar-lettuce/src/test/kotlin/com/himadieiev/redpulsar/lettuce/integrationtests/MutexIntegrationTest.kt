@@ -1,7 +1,7 @@
 package com.himadieiev.redpulsar.lettuce.integrationtests
 
 import TestTags
-import com.himadieiev.redpulsar.core.locks.RedLock
+import com.himadieiev.redpulsar.core.locks.Mutex
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 import java.time.Duration
 
 @Tag(TestTags.INTEGRATIONS)
-class RedLockIntegrationTest {
+class MutexIntegrationTest {
     private lateinit var instances: List<LettucePooled<String, String>>
     private lateinit var backends: List<LocksBackend>
 
@@ -30,8 +30,8 @@ class RedLockIntegrationTest {
 
     @Test
     fun `obtain lock`() {
-        val redLock = RedLock(backends)
-        val permit = redLock.lock("test", Duration.ofSeconds(10))
+        val mutex = Mutex(backends)
+        val permit = mutex.lock("test", Duration.ofSeconds(10))
 
         assertTrue(permit)
 
@@ -41,43 +41,43 @@ class RedLockIntegrationTest {
 
     @Test
     fun `release lock`() {
-        val redLock = RedLock(backends)
-        redLock.lock("test", Duration.ofSeconds(10))
-        redLock.unlock("test")
+        val mutex = Mutex(backends)
+        mutex.lock("test", Duration.ofSeconds(10))
+        mutex.unlock("test")
 
         instances.map { it.sync { redis -> redis.get("test") } }.forEach { assertNull(it) }
     }
 
     @Test
     fun `another client can re-acquire lock`() {
-        val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(50))
+        val mutex = Mutex(backends)
+        val mutex2 = Mutex(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(50))
 
-        assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
+        assertTrue(mutex.lock("test", Duration.ofSeconds(10)))
+        assertFalse(mutex2.lock("test", Duration.ofMillis(100)))
 
-        redLock.unlock("test")
-        assertTrue(redLock2.lock("test", Duration.ofMillis(100)))
+        mutex.unlock("test")
+        assertTrue(mutex2.lock("test", Duration.ofMillis(100)))
     }
 
     @Test
     fun `another client can re-acquire lock due to expiration`() {
-        val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(30))
+        val mutex = Mutex(backends)
+        val mutex2 = Mutex(backends = backends, retryCount = 2, retryDelay = Duration.ofMillis(30))
 
-        assertTrue(redLock.lock("test", Duration.ofMillis(200)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
+        assertTrue(mutex.lock("test", Duration.ofMillis(200)))
+        assertFalse(mutex2.lock("test", Duration.ofMillis(100)))
 
         runBlocking { delay(200) }
-        assertTrue(redLock2.lock("test", Duration.ofMillis(100)))
+        assertTrue(mutex2.lock("test", Duration.ofMillis(100)))
     }
 
     @Test
     fun `dont allow to lock again`() {
-        val redLock = RedLock(backends)
-        val redLock2 = RedLock(backends)
+        val mutex = Mutex(backends)
+        val mutex2 = Mutex(backends)
 
-        assertTrue(redLock.lock("test", Duration.ofSeconds(10)))
-        assertFalse(redLock2.lock("test", Duration.ofMillis(100)))
+        assertTrue(mutex.lock("test", Duration.ofSeconds(10)))
+        assertFalse(mutex2.lock("test", Duration.ofMillis(100)))
     }
 }

@@ -1,9 +1,9 @@
 package com.himadieiev.redpulsar.jedis.locks
 
 import com.himadieiev.redpulsar.core.locks.ListeningCountDownLatch
-import com.himadieiev.redpulsar.core.locks.RedLock
+import com.himadieiev.redpulsar.core.locks.Mutex
 import com.himadieiev.redpulsar.core.locks.Semaphore
-import com.himadieiev.redpulsar.core.locks.SimpleLock
+import com.himadieiev.redpulsar.core.locks.SimplifiedMutex
 import com.himadieiev.redpulsar.jedis.locks.backends.JedisCountDownLatchBackend
 import com.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
 import redis.clients.jedis.UnifiedJedis
@@ -15,36 +15,36 @@ import java.time.Duration
 class LockFactory {
     companion object {
         /**
-         * Create a new [SimpleLock] instance.
+         * Create a new [SimplifiedMutex] instance.
          * @param client [UnifiedJedis] the Jedis client instance to use for lock.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
-         * @return [SimpleLock] the lock instance.
+         * @return [SimplifiedMutex] the lock instance.
          */
         @JvmStatic
-        fun createSimpleLock(
+        fun createSimplifiedMutex(
             client: UnifiedJedis,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
-        ): SimpleLock {
-            return SimpleLock(JedisLocksBackend(client), retryDelay, retryCount)
+        ): SimplifiedMutex {
+            return SimplifiedMutex(JedisLocksBackend(client), retryDelay, retryCount)
         }
 
         /**
-         * Create a new [RedLock] instance.
+         * Create a new [Mutex] instance.
          * @param clients [List]<[UnifiedJedis]> the Jedis client instances to use for lock.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
-         * @return [RedLock] the lock instance.
+         * @return [Mutex] the lock instance.
          */
         @JvmStatic
-        fun createRedLock(
+        fun createMutex(
             clients: List<UnifiedJedis>,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
-        ): RedLock {
+        ): Mutex {
             val backends = clients.map { JedisLocksBackend(it) }
-            return RedLock(backends, retryCount, retryDelay)
+            return Mutex(backends, retryCount, retryDelay)
         }
 
         /**

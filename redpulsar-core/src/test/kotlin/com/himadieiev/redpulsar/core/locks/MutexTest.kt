@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.time.Duration
 
 @Tag(TestTags.UNIT)
-class RedLockTest {
+class MutexTest {
     @Nested
     inner class SingleRedisInstance {
         private lateinit var backend: LocksBackend
@@ -35,8 +35,8 @@ class RedLockTest {
         fun `lock acquired`(ttl: Long) {
             every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(ttl))) } returns "OK"
 
-            val redLock = RedLock(listOf(backend))
-            val permit = redLock.lock("test", Duration.ofSeconds(ttl))
+            val mutex = Mutex(listOf(backend))
+            val permit = mutex.lock("test", Duration.ofSeconds(ttl))
 
             assertTrue(permit)
             verify(exactly = 1) { backend.setLock(any(), any(), any()) }
@@ -48,8 +48,8 @@ class RedLockTest {
             every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(10))) } returns null
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(backend), retryCount = 3, retryDelay = Duration.ofMillis(20))
-            val permit = redLock.lock("test")
+            val mutex = Mutex(listOf(backend), retryCount = 3, retryDelay = Duration.ofMillis(20))
+            val permit = mutex.lock("test")
 
             assertFalse(permit)
 
@@ -63,9 +63,9 @@ class RedLockTest {
         fun `unlock resource`() {
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(backend))
+            val mutex = Mutex(listOf(backend))
             // It cant be guarantied that the lock was actually acquired
-            redLock.unlock("test")
+            mutex.unlock("test")
 
             verify(exactly = 1) {
                 backend.removeLock(eq("test"), any())
@@ -79,9 +79,9 @@ class RedLockTest {
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate retry count`(retryCount: Int) {
             if (retryCount > 0) {
-                Assertions.assertDoesNotThrow { RedLock(listOf(backend), retryCount = retryCount) }
+                Assertions.assertDoesNotThrow { Mutex(listOf(backend), retryCount = retryCount) }
             } else {
-                assertThrows<IllegalArgumentException> { RedLock(listOf(backend), retryCount = retryCount) }
+                assertThrows<IllegalArgumentException> { Mutex(listOf(backend), retryCount = retryCount) }
             }
         }
 
@@ -89,18 +89,18 @@ class RedLockTest {
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate retry delay`(retryDelay: Long) {
             if (retryDelay > 0) {
-                Assertions.assertDoesNotThrow { RedLock(listOf(backend), retryDelay = Duration.ofMillis(retryDelay)) }
+                Assertions.assertDoesNotThrow { Mutex(listOf(backend), retryDelay = Duration.ofMillis(retryDelay)) }
             } else {
                 assertThrows<IllegalArgumentException> {
-                    RedLock(listOf(backend), retryDelay = Duration.ofMillis(retryDelay))
+                    Mutex(listOf(backend), retryDelay = Duration.ofMillis(retryDelay))
                 }
             }
         }
 
         @Test
         fun `validate instance count`() {
-            Assertions.assertDoesNotThrow { RedLock(listOf(backend)) }
-            assertThrows<IllegalArgumentException> { RedLock(listOf()) }
+            Assertions.assertDoesNotThrow { Mutex(listOf(backend)) }
+            assertThrows<IllegalArgumentException> { Mutex(listOf()) }
         }
 
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
@@ -110,11 +110,11 @@ class RedLockTest {
             // validity can be rejected with tiny ttl
             every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-            val redLock = RedLock(listOf(backend))
+            val mutex = Mutex(listOf(backend))
             if (ttl > 2) {
-                Assertions.assertDoesNotThrow { redLock.lock("test", Duration.ofMillis(ttl)) }
+                Assertions.assertDoesNotThrow { mutex.lock("test", Duration.ofMillis(ttl)) }
             } else {
-                assertThrows<IllegalArgumentException> { redLock.lock("test", Duration.ofMillis(ttl)) }
+                assertThrows<IllegalArgumentException> { mutex.lock("test", Duration.ofMillis(ttl)) }
             }
         }
     }
@@ -142,8 +142,8 @@ class RedLockTest {
                 } returns "OK"
             }
 
-            val redLock = RedLock(instances)
-            val permit = redLock.lock("test")
+            val mutex = Mutex(instances)
+            val permit = mutex.lock("test")
 
             assertTrue(permit)
             verify(exactly = 1) {
@@ -160,8 +160,8 @@ class RedLockTest {
             every { backend2.setLock(eq("test"), any(), any()) } returns null
             every { backend3.setLock(eq("test"), any(), any()) } returns "OK"
 
-            val redLock = RedLock(instances)
-            val permit = redLock.lock("test")
+            val mutex = Mutex(instances)
+            val permit = mutex.lock("test")
 
             assertTrue(permit)
             verify(exactly = 1) {
@@ -181,8 +181,8 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(20))
-            val permit = redLock.lock("test")
+            val mutex = Mutex(instances, retryCount = 3, retryDelay = Duration.ofMillis(20))
+            val permit = mutex.lock("test")
 
             assertFalse(permit)
             verify(exactly = 3) {
@@ -205,8 +205,8 @@ class RedLockTest {
                 every { backend.removeLock(eq("test"), any()) } returns "OK"
             }
 
-            val redLock = RedLock(instances, retryCount = 3, retryDelay = Duration.ofMillis(30))
-            val permit = redLock.lock("test", Duration.ofMillis(30))
+            val mutex = Mutex(instances, retryCount = 3, retryDelay = Duration.ofMillis(30))
+            val permit = mutex.lock("test", Duration.ofMillis(30))
 
             assertFalse(permit)
             verify(exactly = 3) {

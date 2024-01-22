@@ -9,23 +9,23 @@ class LockFactoryTest {
     @Test
     fun createSimpleLock() {
         assertThrows<IllegalArgumentException> {
-            LockFactory.createSimpleLock(client = mockk(), retryDelay = Duration.ofSeconds(0))
+            LockFactory.createSimplifiedMutex(client = mockk(), retryDelay = Duration.ofSeconds(0))
         }
         assertThrows<IllegalArgumentException> {
-            LockFactory.createSimpleLock(client = mockk(), retryCount = -1)
+            LockFactory.createSimplifiedMutex(client = mockk(), retryCount = -1)
         }
     }
 
     @Test
     fun createRedLock() {
         assertThrows<IllegalArgumentException> {
-            LockFactory.createRedLock(clients = listOf())
+            LockFactory.createMutex(clients = listOf())
         }
         assertThrows<IllegalArgumentException> {
-            LockFactory.createRedLock(clients = listOf(mockk()), retryDelay = Duration.ofSeconds(0))
+            LockFactory.createMutex(clients = listOf(mockk()), retryDelay = Duration.ofSeconds(0))
         }
         assertThrows<IllegalArgumentException> {
-            LockFactory.createRedLock(clients = listOf(mockk()), retryCount = -1)
+            LockFactory.createMutex(clients = listOf(mockk()), retryCount = -1)
         }
     }
 

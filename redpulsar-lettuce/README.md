@@ -17,7 +17,7 @@ val pubSubClient = LettucePubSubPooled(poolConfig) { RedisClient.create("redis:/
 Creating lock:
 ```kotlin
 // Create lock
-val lock = LockFactory.createSimpleLock(client)
+val lock = LockFactory.createSimplifiedMutex(client)
 lock.lock("myResource", Duration.ofSeconds(1))
 // do something
 lock.unlock("myResource")
@@ -40,7 +40,7 @@ var lettucePubSubPooled = new LettucePubSubPooled<>(poolConfig, client::connectP
 Creating lock:
 ```java
 // Create lock
-var lock = LockFactory.createSimpleLock(lettucePooled, Duration.ofSeconds(1), 3);
+var lock = LockFactory.createSimplifiedMutex(lettucePooled, Duration.ofSeconds(1), 3);
 lock.lock("myResource", Duration.ofSeconds(1));
 // do something
 lock.unlock("myResource");
@@ -51,7 +51,7 @@ This module provides Lettuce pooled client that simplify connection management.
 Instead of creating new connection each time or manage connection pool manually you can use this module.
 
 Available options:
-- **[LettucePooled](./src/main/kotlin/me/himadieiev/redpulsar/lettuce/LettucePooled.kt)** - Lettuce pooled client.
-- **[LettucePubSubPooled](./src/main/kotlin/me/himadieiev/redpulsar/lettuce/LettucePubSubPooled.kt)** - Lettuce pooled client with Pub/Sub support.
+- **[LettucePooled](./src/main/kotlin/com/himadieiev/redpulsar/lettuce/LettucePooled.kt)** - Lettuce pooled client.
+- **[LettucePubSubPooled](./src/main/kotlin/com/himadieiev/redpulsar/lettuce/LettucePubSubPooled.kt)** - Lettuce pooled client with Pub/Sub support.
 
 Both clients support synchronous, asynchronous and reactive APIs.

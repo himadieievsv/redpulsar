@@ -16,7 +16,7 @@ import java.time.Duration
  * @param retryCount [Int] the number of retries to acquire lock.
  * @param retryDelay [Duration] the delay between retries.
  */
-class RedLock(
+class Mutex(
     backends: List<LocksBackend>,
     retryCount: Int = 3,
     retryDelay: Duration = Duration.ofMillis(100),
