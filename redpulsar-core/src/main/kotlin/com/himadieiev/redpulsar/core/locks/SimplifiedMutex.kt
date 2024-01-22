@@ -13,7 +13,7 @@ import java.time.Duration
  * @param retryDelay [Duration] the delay between retries.
  * @param retryCount [Int] the number of retries to acquire lock.
  */
-class SimpleLock(
+class SimplifiedMutex(
     private val backend: LocksBackend,
     private val retryDelay: Duration = Duration.ofMillis(100),
     private val retryCount: Int = 3,

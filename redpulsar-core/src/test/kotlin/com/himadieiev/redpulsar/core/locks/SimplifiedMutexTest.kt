@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.time.Duration
 
 @Tag(TestTags.UNIT)
-class SimpleLockTest {
+class SimplifiedMutexTest {
     private lateinit var backend: LocksBackend
 
     @BeforeEach
@@ -30,8 +30,8 @@ class SimpleLockTest {
     fun `lock acquired`(ttl: Long) {
         every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(ttl))) } returns "OK"
 
-        val simpleLock = SimpleLock(backend)
-        val permit = simpleLock.lock("test", Duration.ofSeconds(ttl))
+        val simplifiedMutex = SimplifiedMutex(backend)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(ttl))
 
         assertTrue(permit)
         verify(exactly = 1) {
@@ -44,8 +44,8 @@ class SimpleLockTest {
         // every { redis.set(eq("test"), any(), any()) } returns null
         every { backend.setLock(eq("test"), any(), eq(Duration.ofSeconds(1))) } returns null
 
-        val simpleLock = SimpleLock(backend, retryDelay = Duration.ofMillis(20), retryCount = 3)
-        val permit = simpleLock.lock("test", Duration.ofSeconds(1))
+        val simplifiedMutex = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(20), retryCount = 3)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(1))
 
         assertFalse(permit)
 
@@ -56,8 +56,8 @@ class SimpleLockTest {
     fun `unlock resource`() {
         every { backend.removeLock(eq("test"), any()) } returns "OK"
 
-        val simpleLock = SimpleLock(backend)
-        simpleLock.unlock("test")
+        val simplifiedMutex = SimplifiedMutex(backend)
+        simplifiedMutex.unlock("test")
 
         verify(exactly = 1) {
             backend.removeLock(eq("test"), any())
@@ -71,9 +71,9 @@ class SimpleLockTest {
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
     fun `validate retry count`(retryCount: Int) {
         if (retryCount > 0) {
-            assertDoesNotThrow { SimpleLock(backend, retryCount = retryCount) }
+            assertDoesNotThrow { SimplifiedMutex(backend, retryCount = retryCount) }
         } else {
-            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryCount = retryCount) }
+            assertThrows<IllegalArgumentException> { SimplifiedMutex(backend, retryCount = retryCount) }
         }
     }
 
@@ -81,9 +81,9 @@ class SimpleLockTest {
     @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
     fun `validate retry delay`(retryDelay: Long) {
         if (retryDelay > 0) {
-            assertDoesNotThrow { SimpleLock(backend, retryDelay = Duration.ofMillis(retryDelay)) }
+            assertDoesNotThrow { SimplifiedMutex(backend, retryDelay = Duration.ofMillis(retryDelay)) }
         } else {
-            assertThrows<IllegalArgumentException> { SimpleLock(backend, retryDelay = Duration.ofMillis(retryDelay)) }
+            assertThrows<IllegalArgumentException> { SimplifiedMutex(backend, retryDelay = Duration.ofMillis(retryDelay)) }
         }
     }
 
@@ -92,11 +92,11 @@ class SimpleLockTest {
     fun `validate ttl`(ttl: Long) {
         every { backend.setLock(eq("test"), any(), any()) } returns "OK"
 
-        val simpleLock = SimpleLock(backend)
+        val simplifiedMutex = SimplifiedMutex(backend)
         if (ttl > 2) {
-            assertDoesNotThrow { simpleLock.lock("test", Duration.ofMillis(ttl)) }
+            assertDoesNotThrow { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
         } else {
-            assertThrows<IllegalArgumentException> { simpleLock.lock("test", Duration.ofMillis(ttl)) }
+            assertThrows<IllegalArgumentException> { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
         }
     }
 }
