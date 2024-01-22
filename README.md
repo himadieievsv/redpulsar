@@ -16,7 +16,7 @@ It is minimalistic, lightweight, and easy to use library written in Kotlin and c
 
 - **[Mutex](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/Mutex.kt)**: Distributed lock mechanism on a resource, that uses consensus of the majority of data storage nodes to determine if check obtained successfully.
 - **[Semaphore](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/Semaphore.kt)**: Distributed semaphore implementation allowing multiple number of lock on a resource. It also uses consensus of the majority of data storage nodes to determine if check obtained successfully.
-- **[SimplifiedMutex](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/SimplifiedMutex.kt)**: Simplified distributed lock mechanism on a resource. Unlike [RedLock](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/Mutex.kt) it uses single data storage node.
+- **[SimplifiedMutex](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/SimplifiedMutex.kt)**: Simplified distributed lock mechanism on a resource. Unlike [Mutex](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/Mutex.kt) it uses single data storage node.
 - **[ListeningCountDownLatch](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/ListeningCountDownLatch.kt)**: Implementation of distributed Count Down Latch, it uses that uses consensus of the majority of data storage instances ensuring count down consistency. 
 [ListeningCountDownLatch](./redpulsar-core/src/main/kotlin/com/himadieiev/redpulsar/core/locks/ListeningCountDownLatch.kt) utilized [Redis Pub/Sub](https://redis.io/topics/pubsub) mechanism to notify waiting workloads about count reaching zero.
 

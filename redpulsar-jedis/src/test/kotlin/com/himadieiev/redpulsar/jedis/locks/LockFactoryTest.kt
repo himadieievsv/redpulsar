@@ -7,7 +7,7 @@ import java.time.Duration
 
 class LockFactoryTest {
     @Test
-    fun createSimpleLock() {
+    fun createSimplifiedMutex() {
         assertThrows<IllegalArgumentException> {
             LockFactory.createSimplifiedMutex(client = mockk(), retryDelay = Duration.ofSeconds(0))
         }
@@ -17,7 +17,7 @@ class LockFactoryTest {
     }
 
     @Test
-    fun createRedLock() {
+    fun createMutex() {
         assertThrows<IllegalArgumentException> {
             LockFactory.createMutex(clients = listOf())
         }
