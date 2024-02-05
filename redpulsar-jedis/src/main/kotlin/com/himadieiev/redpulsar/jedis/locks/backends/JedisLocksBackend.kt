@@ -1,5 +1,9 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
+import com.himadieiev.redpulsar.core.common.cleanUpExpiredSemaphoreLocksScriptPath
+import com.himadieiev.redpulsar.core.common.loadScript
+import com.himadieiev.redpulsar.core.common.removeLockScriptPath
+import com.himadieiev.redpulsar.core.common.setSemaphoreLockScriptPath
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import redis.clients.jedis.UnifiedJedis
@@ -23,13 +27,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         resourceName: String,
         clientId: String,
     ): String? {
-        val luaScript =
-            """
-            if redis.call("get", KEYS[1]) == ARGV[1] then
-                return redis.call("del", KEYS[1])
-            end
-            return nil
-            """.trimIndent()
+        val luaScript = loadScript(removeLockScriptPath)
         return failsafe(null) {
             convertToString(jedis.eval(luaScript, listOf(resourceName), listOf(clientId)))
         }
@@ -42,17 +40,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         maxLeases: Int,
         ttl: Duration,
     ): String? {
-        val luaScript =
-            """
-            local maxLeases = tonumber(ARGV[2])
-            local leasersCount = tonumber(redis.call("scard", KEYS[1]))
-            if leasersCount < maxLeases then
-                redis.call("sadd", KEYS[1], ARGV[1])
-                redis.call("set", KEYS[2], "", "PX", tonumber(ARGV[3]))
-                return "OK"
-            end
-            return nil
-            """.trimIndent()
+        val luaScript = loadScript(setSemaphoreLockScriptPath)
         return failsafe(null) {
             convertToString(
                 jedis.eval(
@@ -83,17 +71,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         leasersKey: String,
         leaserValidityKeyPrefix: String,
     ): String? {
-        val luaScript =
-            """
-            local leasersKey = KEYS[1]
-            local leasers = redis.call("smembers", leasersKey)
-            for _, leaser in ipairs(leasers) do
-                local leaserValidityKey = ARGV[1] .. ":" .. leaser
-                if redis.call("exists", leaserValidityKey) == 0 then
-                    redis.call("srem", leasersKey, leaser)
-                end
-            end
-            """.trimIndent()
+        val luaScript = loadScript(cleanUpExpiredSemaphoreLocksScriptPath)
         return failsafe(null) {
             convertToString(jedis.eval(luaScript, listOf(leasersKey), listOf(leaserValidityKeyPrefix)))
         }
