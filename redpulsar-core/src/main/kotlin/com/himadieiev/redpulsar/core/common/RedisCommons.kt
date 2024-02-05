@@ -2,10 +2,10 @@ package com.himadieiev.redpulsar.core.common
 
 import com.himadieiev.redpulsar.core.locks.abstracts.Backend
 
-const val removeLockScriptPath = "lua/RemoveLockScript.lua"
-const val setSemaphoreLockScriptPath = "lua/SetSemaphoreLockScript.lua"
-const val cleanUpExpiredSemaphoreLocksScriptPath = "lua/CleanUpExpiredSemaphoreLocksScript.lua"
-const val countDownLatchCountScriptPath = "lua/CountDownLatchCountScript.lua"
+const val REMOVE_LOCK_SCRIPT_PATH = "lua/RemoveLockScript.lua"
+const val SET_SEMAPHORE_LOCK_SCRIPT_PATH = "lua/SetSemaphoreLockScript.lua"
+const val CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH = "lua/CleanUpExpiredSemaphoreLocksScript.lua"
+const val COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH = "lua/CountDownLatchCountScript.lua"
 
 fun Backend.loadScript(scriptPath: String): String {
     val resourceStream =

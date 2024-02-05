@@ -1,9 +1,9 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
-import com.himadieiev.redpulsar.core.common.cleanUpExpiredSemaphoreLocksScriptPath
+import com.himadieiev.redpulsar.core.common.CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH
+import com.himadieiev.redpulsar.core.common.REMOVE_LOCK_SCRIPT_PATH
+import com.himadieiev.redpulsar.core.common.SET_SEMAPHORE_LOCK_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
-import com.himadieiev.redpulsar.core.common.removeLockScriptPath
-import com.himadieiev.redpulsar.core.common.setSemaphoreLockScriptPath
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import com.himadieiev.redpulsar.lettuce.LettucePooled
@@ -30,7 +30,7 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
         resourceName: String,
         clientId: String,
     ): String? {
-        val luaScript = loadScript(removeLockScriptPath)
+        val luaScript = loadScript(REMOVE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
                 redis.sync { sync -> sync.eval(luaScript, ScriptOutputType.INTEGER, arrayOf(resourceName), clientId) },
@@ -45,7 +45,7 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
         maxLeases: Int,
         ttl: Duration,
     ): String? {
-        val luaScript = loadScript(setSemaphoreLockScriptPath)
+        val luaScript = loadScript(SET_SEMAPHORE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->
@@ -80,7 +80,7 @@ internal class LettuceLocksBackend(private val redis: LettucePooled<String, Stri
         leasersKey: String,
         leaserValidityKeyPrefix: String,
     ): String? {
-        val luaScript = loadScript(cleanUpExpiredSemaphoreLocksScriptPath)
+        val luaScript = loadScript(CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->

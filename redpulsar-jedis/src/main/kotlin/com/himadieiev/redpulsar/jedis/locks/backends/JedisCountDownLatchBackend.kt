@@ -1,6 +1,6 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
-import com.himadieiev.redpulsar.core.common.countDownLatchCountScriptPath
+import com.himadieiev.redpulsar.core.common.COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
@@ -25,7 +25,7 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
         initialCount: Int,
         ttl: Duration,
     ): String? {
-        val luaScript = loadScript(countDownLatchCountScriptPath)
+        val luaScript = loadScript(COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
                 jedis.eval(
