@@ -1,5 +1,8 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
+import com.himadieiev.redpulsar.core.common.countDownLatchCountScriptPath
+import com.himadieiev.redpulsar.core.common.loadScript
+import com.himadieiev.redpulsar.core.common.setSemaphoreLockScriptPath
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import kotlinx.coroutines.channels.awaitClose
@@ -23,20 +26,7 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
         initialCount: Int,
         ttl: Duration,
     ): String? {
-        val luaScript =
-            """
-            redis.call("sadd", KEYS[1], ARGV[1])
-            if redis.call("pttl", KEYS[1]) == -1 then
-                redis.call("pexpire", KEYS[1], ARGV[2])
-            else
-                redis.call("pexpire", KEYS[1], ARGV[2], "GT")
-            end
-            local elementsCount = redis.call("scard", KEYS[1])
-            if elementsCount >= tonumber(ARGV[3]) then
-                redis.call("publish", KEYS[2], "open")
-            end
-            return "OK"
-            """.trimIndent()
+        val luaScript = loadScript(countDownLatchCountScriptPath)
         return failsafe(null) {
             convertToString(
                 jedis.eval(
