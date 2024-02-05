@@ -1,9 +1,9 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
-import com.himadieiev.redpulsar.core.common.cleanUpExpiredSemaphoreLocksScriptPath
+import com.himadieiev.redpulsar.core.common.CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH
+import com.himadieiev.redpulsar.core.common.REMOVE_LOCK_SCRIPT_PATH
+import com.himadieiev.redpulsar.core.common.SET_SEMAPHORE_LOCK_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
-import com.himadieiev.redpulsar.core.common.removeLockScriptPath
-import com.himadieiev.redpulsar.core.common.setSemaphoreLockScriptPath
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import redis.clients.jedis.UnifiedJedis
@@ -27,7 +27,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         resourceName: String,
         clientId: String,
     ): String? {
-        val luaScript = loadScript(removeLockScriptPath)
+        val luaScript = loadScript(REMOVE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(jedis.eval(luaScript, listOf(resourceName), listOf(clientId)))
         }
@@ -40,7 +40,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         maxLeases: Int,
         ttl: Duration,
     ): String? {
-        val luaScript = loadScript(setSemaphoreLockScriptPath)
+        val luaScript = loadScript(SET_SEMAPHORE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
                 jedis.eval(
@@ -71,7 +71,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         leasersKey: String,
         leaserValidityKeyPrefix: String,
     ): String? {
-        val luaScript = loadScript(cleanUpExpiredSemaphoreLocksScriptPath)
+        val luaScript = loadScript(CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(jedis.eval(luaScript, listOf(leasersKey), listOf(leaserValidityKeyPrefix)))
         }
