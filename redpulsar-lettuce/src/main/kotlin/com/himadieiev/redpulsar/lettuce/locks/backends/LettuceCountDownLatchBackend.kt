@@ -1,5 +1,7 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
+import com.himadieiev.redpulsar.core.common.countDownLatchCountScriptPath
+import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
@@ -25,23 +27,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
         initialCount: Int,
         ttl: Duration,
     ): String? {
-        // ARGV[1] - clientId + count
-        // ARGV[2] - ttl.inWholeMilliseconds
-        // ARGV[3] - initialCount
-        val luaScript =
-            """
-            redis.call("sadd", KEYS[1], ARGV[1])
-            if redis.call("pttl", KEYS[1]) == -1 then
-                redis.call("pexpire", KEYS[1], ARGV[2])
-            else
-                redis.call("pexpire", KEYS[1], ARGV[2], "GT")
-            end
-            local elementsCount = redis.call("scard", KEYS[1])
-            if elementsCount >= tonumber(ARGV[3]) then
-                redis.call("publish", KEYS[2], "open")
-            end
-            return "OK"
-            """.trimIndent()
+        val luaScript = loadScript(countDownLatchCountScriptPath)
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->
