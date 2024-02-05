@@ -2,7 +2,6 @@ package com.himadieiev.redpulsar.jedis.locks.backends
 
 import com.himadieiev.redpulsar.core.common.countDownLatchCountScriptPath
 import com.himadieiev.redpulsar.core.common.loadScript
-import com.himadieiev.redpulsar.core.common.setSemaphoreLockScriptPath
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import kotlinx.coroutines.channels.awaitClose
