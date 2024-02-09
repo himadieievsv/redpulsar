@@ -82,5 +82,8 @@ class Semaphore(
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun buildKey(resourceName: String, vararg parts: String) = "{$globalKeyPrefix:$resourceName}:" + parts.joinToString(":")
+    private inline fun buildKey(
+        resourceName: String,
+        vararg parts: String,
+    ) = "{$globalKeyPrefix:$resourceName}:" + parts.joinToString(":")
 }

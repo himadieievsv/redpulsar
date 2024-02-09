@@ -79,7 +79,7 @@ class SemaphoreTest {
             every {
                 backend.cleanUpExpiredSemaphoreLocks(
                     eq("{semaphore:test}:leasers"),
-                    eq( "{semaphore:test}:" ),
+                    eq("{semaphore:test}:"),
                 )
             } returns "OK"
 
@@ -105,7 +105,7 @@ class SemaphoreTest {
                 // cleaning up
                 backend.cleanUpExpiredSemaphoreLocks(
                     eq("{semaphore:test}:leasers"),
-                    eq( "{semaphore:test}:" ),
+                    eq("{semaphore:test}:"),
                 )
             }
         }

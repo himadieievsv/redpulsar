@@ -7,7 +7,6 @@ import com.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
 import getInstances
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
