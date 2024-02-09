@@ -37,12 +37,13 @@ class SemaphoreIntegrationTest {
 
         assertTrue(permit)
 
-        val clients = instances.map { it.sync { redis -> redis.smembers("semaphore:lasers:test") } }
+        val clients = instances.map { it.sync { redis -> redis.smembers("{semaphore:test}:leasers") } }
+        clients.forEach { client -> assertTrue(client.isNotEmpty()) }
         assertTrue(clients[0] == clients[1] && clients[1] == clients[2])
 
         clients[0].forEach { leaser ->
             instances.forEach {
-                assertTrue(it.sync { redis -> redis.exists("semaphore:test:$leaser") == 1L })
+                assertTrue(it.sync { redis -> redis.exists("{semaphore:test}:$leaser") == 1L })
             }
         }
     }
@@ -52,22 +53,23 @@ class SemaphoreIntegrationTest {
         val semaphore = Semaphore(backends, 3)
         semaphore.lock("test", Duration.ofSeconds(10))
 
-        val clients = instances.map { it.sync { redis -> redis.smembers("semaphore:lasers:test") } }
+        val clients = instances.map { it.sync { redis -> redis.smembers("{semaphore:test}:leasers") } }
+        clients.forEach { client -> assertTrue(client.isNotEmpty()) }
         assertTrue(clients[0] == clients[1] && clients[1] == clients[2])
         clients[0].forEach { leaser ->
             instances.forEach {
-                assertTrue(it.sync { redis -> redis.exists("semaphore:test:$leaser") == 1L })
+                assertTrue(it.sync { redis -> redis.exists("{semaphore:test}:$leaser") == 1L })
             }
         }
 
         semaphore.unlock("test")
         assertTrue(
-            instances.map { it.sync { redis -> redis.smembers("semaphore:lasers:test") } }
+            instances.map { it.sync { redis -> redis.smembers("{semaphore:test}:leasers") } }
                 .none { it.isNotEmpty() },
         )
         clients[0].forEach { leaser ->
             instances.forEach {
-                assertFalse(it.sync { redis -> redis.exists("semaphore:test:$leaser") == 1L })
+                assertFalse(it.sync { redis -> redis.exists("{semaphore:test}:$leaser") == 1L })
             }
         }
     }
@@ -76,12 +78,12 @@ class SemaphoreIntegrationTest {
     @ValueSource(ints = [1, 2, 3, 5, 7, 10])
     fun `another client can re-acquire lock`(maxLeases: Int) {
         val semaphores = mutableListOf<Semaphore>()
-        (1..maxLeases + 1)
+        (1..maxLeases)
             .forEach {
                 semaphores.add(
                     Semaphore(
                         backends = backends,
-                        maxLeases = it,
+                        maxLeases = maxLeases,
                         retryCount = 2,
                         retryDelay = Duration.ofMillis(30),
                     ),
@@ -114,12 +116,12 @@ class SemaphoreIntegrationTest {
     @ValueSource(ints = [1, 2, 3, 5, 7, 10])
     fun `another client can re-acquire lock due to expiration`(maxLeases: Int) {
         val semaphores = mutableListOf<Semaphore>()
-        (1..maxLeases + 1)
+        (1..maxLeases)
             .forEach {
                 semaphores.add(
                     Semaphore(
                         backends = backends,
-                        maxLeases = it,
+                        maxLeases = maxLeases,
                         retryCount = 2,
                         retryDelay = Duration.ofMillis(30),
                     ),
@@ -136,7 +138,7 @@ class SemaphoreIntegrationTest {
                 semaphores2.add(
                     Semaphore(
                         backends = backends,
-                        maxLeases = it,
+                        maxLeases = maxLeases,
                         retryCount = 2,
                         retryDelay = Duration.ofMillis(30),
                     ),
