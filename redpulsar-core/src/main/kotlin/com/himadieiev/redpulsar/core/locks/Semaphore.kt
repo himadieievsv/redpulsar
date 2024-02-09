@@ -55,7 +55,7 @@ class Semaphore(
         resourceName: String,
         ttl: Duration,
     ): String? {
-        val leasersKey = buildKey(leasersKey, resourceName)
+        val leasersKey = buildKey(resourceName, leasersKey)
         val leaserValidityKey = buildKey(resourceName, clientId)
         return backend.setSemaphoreLock(leasersKey, leaserValidityKey, clientId, maxLeases, ttl)
     }
@@ -64,7 +64,7 @@ class Semaphore(
         backend: LocksBackend,
         resourceName: String,
     ): String? {
-        val leasersKey = buildKey(leasersKey, resourceName)
+        val leasersKey = buildKey(resourceName, leasersKey)
         val leaserValidityKey = buildKey(resourceName, clientId)
         val removeSemaphoreLock = backend.removeSemaphoreLock(leasersKey, leaserValidityKey, clientId)
         // clean up expired other leasers
@@ -76,11 +76,11 @@ class Semaphore(
         backend: LocksBackend,
         resourceName: String,
     ) {
-        val leasersKey = buildKey(leasersKey, resourceName)
+        val leasersKey = buildKey(resourceName, leasersKey)
         val leaserValidityKeyPrefix = buildKey(resourceName)
         backend.cleanUpExpiredSemaphoreLocks(leasersKey, leaserValidityKeyPrefix)
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun buildKey(vararg parts: String) = globalKeyPrefix + ":" + parts.joinToString(":")
+    private inline fun buildKey(resourceName: String, vararg parts: String) = "{$globalKeyPrefix:$resourceName}:" + parts.joinToString(":")
 }
