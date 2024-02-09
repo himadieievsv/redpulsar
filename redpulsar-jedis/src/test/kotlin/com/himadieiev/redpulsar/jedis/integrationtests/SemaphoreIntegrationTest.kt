@@ -7,6 +7,7 @@ import com.himadieiev.redpulsar.jedis.locks.backends.JedisLocksBackend
 import getInstances
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -73,12 +74,12 @@ class SemaphoreIntegrationTest {
     @ValueSource(ints = [1, 2, 3, 5, 7, 10])
     fun `another client can re-acquire lock`(maxLeases: Int) {
         val semaphores = mutableListOf<Semaphore>()
-        (1..maxLeases + 1)
+        (1..maxLeases)
             .forEach {
                 semaphores.add(
                     Semaphore(
                         backends = backends,
-                        maxLeases = it,
+                        maxLeases = maxLeases,
                         retryCount = 2,
                         retryDelay = Duration.ofMillis(30),
                     ),
@@ -116,7 +117,7 @@ class SemaphoreIntegrationTest {
                 semaphores.add(
                     Semaphore(
                         backends = backends,
-                        maxLeases = it,
+                        maxLeases = maxLeases,
                         retryCount = 2,
                         retryDelay = Duration.ofMillis(30),
                     ),
