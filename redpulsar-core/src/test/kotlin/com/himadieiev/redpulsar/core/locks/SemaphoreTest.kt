@@ -32,8 +32,8 @@ class SemaphoreTest {
         fun `lock acquired`(ttl: Long) {
             every {
                 backend.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(ttl)),
@@ -46,8 +46,8 @@ class SemaphoreTest {
             assertTrue(permit)
             verify(exactly = 1) {
                 backend.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     any(),
                     any(),
@@ -63,8 +63,8 @@ class SemaphoreTest {
         fun `lock already taken or instance is down`() {
             every {
                 backend.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(1)),
@@ -72,14 +72,14 @@ class SemaphoreTest {
             } returns null
             every {
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"), match { it.startsWith("semaphore:test:") }, any(),
+                    eq("{semaphore:test}:leasers"), match { it.startsWith("{semaphore:test}:") }, any(),
                 )
             } returns "OK"
             // cleaning up
             every {
                 backend.cleanUpExpiredSemaphoreLocks(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}") },
                 )
             } returns "OK"
 
@@ -90,22 +90,22 @@ class SemaphoreTest {
 
             verify(exactly = 4) {
                 backend.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     any(),
                 )
                 // unlocking
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                 )
                 // cleaning up
                 backend.cleanUpExpiredSemaphoreLocks(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}") },
                 )
             }
         }
@@ -114,13 +114,13 @@ class SemaphoreTest {
         fun `unlock resource`() {
             every {
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                 )
             } returns "OK"
             every {
-                backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
@@ -129,12 +129,12 @@ class SemaphoreTest {
             verify(exactly = 1) {
                 // unlocking
                 backend.removeSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                 )
                 // cleaning up
-                backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
             }
             verify(exactly = 0) {
                 backend.setSemaphoreLock(any(), any(), any(), any(), any())
@@ -194,8 +194,8 @@ class SemaphoreTest {
         fun `validate ttl`(ttl: Long) {
             every {
                 backend.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofMillis(ttl)),
@@ -231,8 +231,8 @@ class SemaphoreTest {
             instances.forEach { backend ->
                 every {
                     backend.setSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                         eq(3),
                         eq(Duration.ofSeconds(10)),
@@ -247,8 +247,8 @@ class SemaphoreTest {
             instances.forEach { backend ->
                 verify(exactly = 1) {
                     backend.setSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                         eq(3),
                         any(),
@@ -265,8 +265,8 @@ class SemaphoreTest {
         fun `two instances are in quorum`() {
             every {
                 backend1.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(10)),
@@ -274,8 +274,8 @@ class SemaphoreTest {
             } returns "OK"
             every {
                 backend2.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(10)),
@@ -283,8 +283,8 @@ class SemaphoreTest {
             } returns null
             every {
                 backend3.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(10)),
@@ -299,8 +299,8 @@ class SemaphoreTest {
             instances.forEach { backend ->
                 verify(exactly = 1) {
                     backend.setSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                         eq(3),
                         any(),
@@ -317,8 +317,8 @@ class SemaphoreTest {
         fun `quorum wasn't reach`() {
             every {
                 backend1.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(3)),
@@ -326,8 +326,8 @@ class SemaphoreTest {
             } returns null
             every {
                 backend2.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(3)),
@@ -335,8 +335,8 @@ class SemaphoreTest {
             } returns null
             every {
                 backend3.setSemaphoreLock(
-                    eq("semaphore:leasers:test"),
-                    match { it.startsWith("semaphore:test:") },
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
                     any(),
                     eq(3),
                     eq(Duration.ofSeconds(3)),
@@ -345,16 +345,16 @@ class SemaphoreTest {
             instances.forEach { backend ->
                 every {
                     backend.removeSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                     )
                 } returns "OK"
                 // cleaning up
                 every {
                     backend.cleanUpExpiredSemaphoreLocks(
-                        eq("semaphore:leasers:test"),
-                        eq("semaphore:test"),
+                        eq("{semaphore:test}:leasers"),
+                        eq("{semaphore:test}:"),
                     )
                 } returns "OK"
             }
@@ -367,20 +367,20 @@ class SemaphoreTest {
             instances.forEach { backend ->
                 verify(exactly = 3) {
                     backend.setSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                         eq(3),
                         any(),
                     )
                     // unlocking
                     backend.removeSemaphoreLock(
-                        eq("semaphore:leasers:test"),
-                        match { it.startsWith("semaphore:test:") },
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
                         any(),
                     )
                     // cleaning up
-                    backend.cleanUpExpiredSemaphoreLocks(eq("semaphore:leasers:test"), eq("semaphore:test"))
+                    backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
                 }
             }
         }
