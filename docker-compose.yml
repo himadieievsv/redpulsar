@@ -3,12 +3,18 @@ services:
   redis1:
     image: himadieievsv/redis-cluster:7.2
     ports:
-      - "7010-7012:7000-7002"
+      - "7010-7012:7010-7012"
+    environment:
+      - INITIAL_PORT=7010
   redis2:
     image: himadieievsv/redis-cluster:7.2
     ports:
-      - "7020-7022:7000-7002"
+      - "7020-7022:7020-7022"
+    environment:
+      - INITIAL_PORT=7020
   redis3:
     image: himadieievsv/redis-cluster:7.2
     ports:
-      - "7030-7032:7000-7002"
+      - "7030-7032:7030-7032"
+    environment:
+      - INITIAL_PORT=7030
