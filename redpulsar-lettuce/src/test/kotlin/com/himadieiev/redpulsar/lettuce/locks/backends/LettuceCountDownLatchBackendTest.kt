@@ -55,12 +55,12 @@ class LettuceCountDownLatchBackendTest {
                 sync.eval<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
-                    eq(arrayOf("latch:test", "latch:channel:test")),
+                    eq(arrayOf("latch:test", "latch:test:channel")),
                     eq("${clientId}0"), eq("5000"), eq("4"),
                 )
             } returns "OK"
             val callResult =
-                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+                countDownLatchBackend.count("latch:test", "latch:test:channel", clientId, 0, 4, Duration.ofSeconds(5))
 
             Assertions.assertEquals("OK", callResult)
             verify(exactly = 1) {
@@ -75,12 +75,12 @@ class LettuceCountDownLatchBackendTest {
                 sync.eval<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
-                    eq(arrayOf("latch:test", "latch:channel:test")),
+                    eq(arrayOf("latch:test", "latch:test:channel")),
                     eq("${clientId}0"), eq("5000"), eq("4"),
                 )
             } throws IOException("test exception")
             val callResult =
-                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+                countDownLatchBackend.count("latch:test", "latch:test:channel", clientId, 0, 4, Duration.ofSeconds(5))
 
             Assertions.assertNull(callResult)
             verify(exactly = 1) {
@@ -142,8 +142,8 @@ class LettuceCountDownLatchBackendTest {
         @BeforeEach
         fun setUp() {
             connection = mockk()
-            every { sync.subscribe(eq("latch:channel:test")) } returns Unit
-            every { sync.unsubscribe(eq("latch:channel:test")) } returns Unit
+            every { sync.subscribe(eq("latch:test:channel")) } returns Unit
+            every { sync.unsubscribe(eq("latch:test:channel")) } returns Unit
             every { sync.statefulConnection } returns connection
             every { connection.addListener(any<RedisPubSubListener<String, String>>()) } returns Unit
             every { connection.removeListener(any<RedisPubSubListener<String, String>>()) } returns Unit
@@ -154,19 +154,19 @@ class LettuceCountDownLatchBackendTest {
         fun `listen produce value`(messageCount: Int) {
             val listener = slot<RedisPubSubListener<String, String>>()
             every { connection.addListener(capture(listener)) } returns Unit
-            CoroutineScope(CoroutineName("latch:channel:test")).launch {
-                val result = countDownLatchBackend.listen("latch:channel:test")
+            CoroutineScope(CoroutineName("latch:test:channel")).launch {
+                val result = countDownLatchBackend.listen("latch:test:channel")
                 Assertions.assertEquals("open", result)
             }
 
             runBlocking { Thread.sleep(200) }
             repeat(messageCount) {
-                listener.captured.message("latch:channel:test", "open")
+                listener.captured.message("latch:test:channel", "open")
             }
             runBlocking { Thread.sleep(100) }
             verify(exactly = 1) {
-                sync.subscribe(eq("latch:channel:test"))
-                sync.unsubscribe(eq("latch:channel:test"))
+                sync.subscribe(eq("latch:test:channel"))
+                sync.unsubscribe(eq("latch:test:channel"))
             }
         }
 
@@ -174,11 +174,11 @@ class LettuceCountDownLatchBackendTest {
         fun `message not received`() {
             runBlocking {
                 assertThrows<TimeoutCancellationException> {
-                    withTimeout(100) { countDownLatchBackend.listen("latch:channel:test") }
+                    withTimeout(100) { countDownLatchBackend.listen("latch:test:channel") }
                 }
             }
             verify(exactly = 1) {
-                sync.subscribe("latch:channel:test")
+                sync.subscribe("latch:test:channel")
             }
         }
     }

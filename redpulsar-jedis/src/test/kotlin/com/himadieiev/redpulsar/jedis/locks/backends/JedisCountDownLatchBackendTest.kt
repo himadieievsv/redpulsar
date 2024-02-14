@@ -44,12 +44,12 @@ class JedisCountDownLatchBackendTest {
             every {
                 redis.eval(
                     any(),
-                    eq(listOf("latch:test", "latch:channel:test")),
+                    eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } returns "OK"
             val callResult =
-                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+                countDownLatchBackend.count("latch:test", "latch:test:channel", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", callResult)
             verify(exactly = 1) {
@@ -63,12 +63,12 @@ class JedisCountDownLatchBackendTest {
             every {
                 redis.eval(
                     any(),
-                    eq(listOf("latch:test", "latch:channel:test")),
+                    eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
                 )
             } throws IOException("test exception")
             val callResult =
-                countDownLatchBackend.count("latch:test", "latch:channel:test", clientId, 0, 4, Duration.ofSeconds(5))
+                countDownLatchBackend.count("latch:test", "latch:test:channel", clientId, 0, 4, Duration.ofSeconds(5))
 
             assertNull(callResult)
             verify(exactly = 1) {
@@ -132,14 +132,14 @@ class JedisCountDownLatchBackendTest {
             val channel = slot<String>()
             every { redis.subscribe(capture(pubSubSlot), capture(channel)) } returns Unit
             CoroutineScope(CoroutineName("test")).launch {
-                val result = countDownLatchBackend.listen("latch:channel:test")
+                val result = countDownLatchBackend.listen("latch:test:channel")
                 assertEquals("open", result)
             }
             runBlocking { delay(200) }
             repeat(messageCount) {
-                pubSubSlot.captured.onMessage("latch:channel:test", "open")
+                pubSubSlot.captured.onMessage("latch:test:channel", "open")
             }
-            assertEquals("latch:channel:test", channel.captured)
+            assertEquals("latch:test:channel", channel.captured)
             verify(exactly = 1) {
                 redis.subscribe(any<JedisPubSub>(), any<String>())
             }
@@ -147,11 +147,11 @@ class JedisCountDownLatchBackendTest {
 
         @Test
         fun `message not received`() {
-            every { redis.subscribe(any(), eq("latch:channel:test")) } returns Unit
+            every { redis.subscribe(any(), eq("latch:test:channel")) } returns Unit
 
             runBlocking {
                 assertThrows<TimeoutCancellationException> {
-                    withTimeout(100) { countDownLatchBackend.listen("latch:channel:test") }
+                    withTimeout(100) { countDownLatchBackend.listen("latch:test:channel") }
                 }
             }
             verify(exactly = 1) {

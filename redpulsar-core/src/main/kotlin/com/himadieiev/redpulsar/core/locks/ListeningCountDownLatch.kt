@@ -40,7 +40,7 @@ class ListeningCountDownLatch(
     private val scope: CoroutineScope = CoroutineScope(CoroutineName("listeningCountDownLatch") + Dispatchers.IO)
     private val clientId: String = UUID.randomUUID().toString()
     private val keySpace = "countdownlatch"
-    private val channelSpace = "channels"
+    private val channelSpace = "channel"
     private val currentCounter = AtomicInteger(count)
     private val minimalMaxDuration = Duration.ofMillis(100)
 
@@ -150,7 +150,7 @@ class ListeningCountDownLatch(
             ) { backend ->
                 backend.count(
                     latchKeyName = buildKey(name),
-                    channelName = buildKey(channelSpace, name),
+                    channelName = buildKey(name, channelSpace),
                     clientId = clientId,
                     count = currentCounter.get(),
                     initialCount = count,
@@ -203,10 +203,10 @@ class ListeningCountDownLatch(
             retryDelay = retryDelay,
             waitStrategy = WaitStrategy.MAJORITY,
         ) { backend ->
-            backend.listen(channelName = buildKey(channelSpace, name))
+            backend.listen(channelName = buildKey(name, channelSpace))
         }
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun buildKey(vararg parts: String) = keySpace + ":" + parts.joinToString(":")
+    private inline fun buildKey(name: String, vararg parts: String) = "{$keySpace:$name}:" + parts.joinToString(":")
 }
