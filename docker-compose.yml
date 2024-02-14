@@ -1,14 +1,14 @@
 version: '3'
 services:
   redis1:
-    image: redis:latest
+    image: himadieievsv/redis-cluster:7.2
     ports:
-      - "6381:6379"
+      - "7010-7012:7000-7002"
   redis2:
-    image: redis:latest
+    image: himadieievsv/redis-cluster:7.2
     ports:
-      - "6382:6379"
+      - "7020-7022:7000-7002"
   redis3:
-    image: redis:latest
+    image: himadieievsv/redis-cluster:7.2
     ports:
-      - "6383:6379"
+      - "7030-7032:7000-7002"
