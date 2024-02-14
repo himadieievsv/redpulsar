@@ -208,5 +208,8 @@ class ListeningCountDownLatch(
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun buildKey(name: String, vararg parts: String) = "{$keySpace:$name}:" + parts.joinToString(":")
+    private inline fun buildKey(
+        name: String,
+        vararg parts: String,
+    ) = "{$keySpace:$name}:" + parts.joinToString(":")
 }
