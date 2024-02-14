@@ -14,32 +14,38 @@ jobs:
     runs-on: ubuntu-latest
     services:
       redis1:
-        image: redis
+        image: himadieievsv/redis-cluster:7.2
+        ports:
+          - "7010-7012:7010-7012"
+        env:
+          INITIAL_PORT: 7010
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli -p 7010 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6381:6379
       redis2:
-        image: redis
+        image: himadieievsv/redis-cluster:7.2
+        ports:
+          - "7020-7022:7020-7022"
+        env:
+          INITIAL_PORT: 7020
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli -p 7020 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6382:6379
       redis3:
-        image: redis
+        image: himadieievsv/redis-cluster:7.2
+        ports:
+          - "7010-7012:7010-7012"
+        env:
+          INITIAL_PORT: 7010
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli -p 7030 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6383:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
