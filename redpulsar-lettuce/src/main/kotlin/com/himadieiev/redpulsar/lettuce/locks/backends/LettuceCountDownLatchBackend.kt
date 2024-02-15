@@ -111,7 +111,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
                     }
                 val job =
                     launch {
-                        redis.sync { sync ->
+                        redis.syncPubSub { sync ->
                             sync.statefulConnection.addListener(pubSub)
                             sync.subscribe(channelName)
                             while (isActive) {

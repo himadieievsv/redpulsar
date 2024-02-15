@@ -22,22 +22,25 @@ class LettucePubSubPooledTest {
     @BeforeEach
     fun setUp() {
         connectionPool = mockk<GenericObjectPool<StatefulRedisPubSubConnection<String, String>>>()
-        lettucePubSubPooled = LettucePubSubPooled(connectionPool)
         connection = mockk<StatefulRedisPubSubConnection<String, String>>()
         every { connection.isMulti } returns false
+        every { connection.close() } returns Unit
         every { connectionPool.borrowObject() } returns connection
         every { connectionPool.returnObject(eq(connection)) } returns Unit
+        lettucePubSubPooled = LettucePubSubPooled(connectionPool)
     }
 
     @Test
     fun `sync calls success`() {
         every { connection.sync() } returns mockk()
-        lettucePubSubPooled.sync { }
+        lettucePubSubPooled.syncPubSub { }
 
         verify(exactly = 1) {
             connection.sync()
-            connectionPool.borrowObject()
             connectionPool.returnObject(eq(connection))
+        }
+        verify(exactly = 2) {
+            connectionPool.borrowObject()
         }
     }
 
@@ -47,37 +50,15 @@ class LettucePubSubPooledTest {
         every { connection.isMulti } returns true
         every { connection.sync() } returns sync
         every { sync.discard() } returns "OK"
-        lettucePubSubPooled.sync {}
+        lettucePubSubPooled.syncPubSub {}
 
         verify(exactly = 1) {
             sync.discard()
-            connectionPool.borrowObject()
             connectionPool.returnObject(eq(connection))
         }
-        verify(exactly = 2) { connection.sync() }
-    }
-
-    @Test
-    fun `async calls success`() {
-        every { connection.async() } returns mockk()
-        lettucePubSubPooled.async {}
-
-        verify(exactly = 1) {
-            connection.async()
+        verify(exactly = 2) {
+            connection.sync()
             connectionPool.borrowObject()
-            connectionPool.returnObject(eq(connection))
-        }
-    }
-
-    @Test
-    fun `reactive calls success`() {
-        every { connection.reactive() } returns mockk()
-        lettucePubSubPooled.reactive {}
-
-        verify(exactly = 1) {
-            connection.reactive()
-            connectionPool.borrowObject()
-            connectionPool.returnObject(eq(connection))
         }
     }
 
@@ -85,7 +66,13 @@ class LettucePubSubPooledTest {
     fun `borrowObject throws exception`() {
         every { connectionPool.borrowObject() } throws IOException()
 
-        assertThrows<LettucePooledException> { lettucePubSubPooled.sync {} }
+        assertThrows<LettucePooledException> { lettucePubSubPooled.syncPubSub {} }
+        verify(exactly = 2) { connectionPool.borrowObject() }
+    }
+
+    @Test
+    fun `sync operation is disabled`() {
+        assertThrows<UnsupportedOperationException> { lettucePubSubPooled.sync {} }
         verify(exactly = 1) { connectionPool.borrowObject() }
     }
 }
