@@ -7,6 +7,7 @@ import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import com.himadieiev.redpulsar.lettuce.LettucePooled
+import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs
 import java.time.Duration
@@ -14,7 +15,7 @@ import java.time.Duration
 /**
  * An implementation of [LocksBackend] that uses Redis as a storage.
  */
-internal class LettuceLocksBackend(private val redis: LettucePooled<String, String>) : LocksBackend() {
+internal class LettuceLocksBackend(private val redis: LettuceUnified<String, String>) : LocksBackend() {
     override fun setLock(
         resourceName: String,
         clientId: String,
