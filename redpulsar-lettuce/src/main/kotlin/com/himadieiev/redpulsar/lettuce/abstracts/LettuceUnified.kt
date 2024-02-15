@@ -1,6 +1,5 @@
 package com.himadieiev.redpulsar.lettuce.abstracts
 
-import io.lettuce.core.api.sync.BaseRedisCommands
 import io.lettuce.core.api.sync.RedisCommands
 
 interface LettuceUnified<K, V> {

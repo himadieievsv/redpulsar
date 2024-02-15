@@ -3,7 +3,6 @@ package com.himadieiev.redpulsar.lettuce.abstracts
 import com.himadieiev.redpulsar.lettuce.exceptions.LettucePooledException
 import io.lettuce.core.api.StatefulConnection
 import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.sync.BaseRedisCommands
 import io.lettuce.core.api.sync.RedisCommands
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection
 import mu.KotlinLogging
@@ -17,12 +16,11 @@ import org.apache.commons.pool2.impl.GenericObjectPool
 abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
     protected val connectionPool: GenericObjectPool<T>,
 ) : AutoCloseable, LettuceUnified<K, V> {
-
     init {
         connectionPool.borrowObject().use { connection ->
             if (connection !is StatefulRedisConnection<*, *> && connection !is StatefulRedisClusterConnection<*, *>) {
                 throw IllegalArgumentException(
-                    "Connection pool must be of type StatefulRedisConnection or StatefulRedisClusterConnection."
+                    "Connection pool must be of type StatefulRedisConnection or StatefulRedisClusterConnection.",
                 )
             }
         }

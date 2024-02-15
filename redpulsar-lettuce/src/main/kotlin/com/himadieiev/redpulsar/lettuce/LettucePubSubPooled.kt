@@ -1,15 +1,8 @@
 package com.himadieiev.redpulsar.lettuce
 
 import com.himadieiev.redpulsar.lettuce.abstracts.AbstractLettucePooled
-import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.async.RedisAsyncCommands
-import io.lettuce.core.api.reactive.RedisReactiveCommands
-import io.lettuce.core.api.sync.BaseRedisCommands
 import io.lettuce.core.api.sync.RedisCommands
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
-import io.lettuce.core.pubsub.api.async.RedisPubSubAsyncCommands
-import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
 import io.lettuce.core.pubsub.api.sync.RedisPubSubCommands
 import io.lettuce.core.support.ConnectionPoolSupport
 import org.apache.commons.pool2.impl.GenericObjectPool
