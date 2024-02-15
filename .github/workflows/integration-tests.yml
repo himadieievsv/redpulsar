@@ -38,9 +38,9 @@ jobs:
       redis3:
         image: himadieievsv/redis-cluster:7.2
         ports:
-          - "7010-7012:7010-7012"
+          - "7030-7032:7030-7032"
         env:
-          INITIAL_PORT: 7010
+          INITIAL_PORT: 7030
         options: >-
           --health-cmd "redis-cli -p 7030 ping"
           --health-interval 10s
