@@ -20,7 +20,7 @@ jobs:
         env:
           INITIAL_PORT: 7010
         options: >-
-          --health-cmd "redis-cli -p 7010 ping"
+          --health-cmd "/redis-build/bin/redis-cli -p 7010 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -31,7 +31,7 @@ jobs:
         env:
           INITIAL_PORT: 7020
         options: >-
-          --health-cmd "redis-cli -p 7020 ping"
+          --health-cmd "/redis-build/bin/redis-cli -p 7020 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -42,7 +42,7 @@ jobs:
         env:
           INITIAL_PORT: 7030
         options: >-
-          --health-cmd "redis-cli -p 7030 ping"
+          --health-cmd "/redis-build/bin/redis-cli -p 7030 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
