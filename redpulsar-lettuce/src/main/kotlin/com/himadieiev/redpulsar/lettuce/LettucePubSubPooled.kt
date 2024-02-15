@@ -1,7 +1,7 @@
 package com.himadieiev.redpulsar.lettuce
 
 import com.himadieiev.redpulsar.lettuce.abstracts.AbstractLettucePooled
-import io.lettuce.core.api.sync.RedisCommands
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.sync.RedisPubSubCommands
 import io.lettuce.core.support.ConnectionPoolSupport
@@ -39,7 +39,7 @@ class LettucePubSubPooled<K, V>(
         }
     }
 
-    override fun <R> sync(consumer: (sync: RedisCommands<K, V>) -> R): R {
+    override fun <R> sync(consumer: (sync: RedisClusterCommands<K, V>) -> R): R {
         throw UnsupportedOperationException("Pub/Sub connection does not support RedisCommands.")
     }
 }

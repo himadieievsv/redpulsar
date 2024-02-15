@@ -3,7 +3,7 @@ package com.himadieiev.redpulsar.lettuce.integrationtests
 import TestTags
 import com.himadieiev.redpulsar.core.locks.Mutex
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import com.himadieiev.redpulsar.lettuce.LettucePooled
+import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
 import getPooledInstances
 import kotlinx.coroutines.delay
@@ -18,7 +18,7 @@ import java.time.Duration
 
 @Tag(TestTags.INTEGRATIONS)
 class MutexIntegrationTest {
-    private lateinit var instances: List<LettucePooled<String, String>>
+    private lateinit var instances: List<LettuceUnified<String, String>>
     private lateinit var backends: List<LocksBackend>
 
     @BeforeEach

@@ -3,7 +3,7 @@ package com.himadieiev.redpulsar.lettuce.integrationtests
 import TestTags
 import com.himadieiev.redpulsar.core.locks.Semaphore
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
-import com.himadieiev.redpulsar.lettuce.LettucePooled
+import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
 import getPooledInstances
 import kotlinx.coroutines.delay
@@ -20,7 +20,7 @@ import kotlin.random.Random.Default.nextInt
 
 @Tag(TestTags.INTEGRATIONS)
 class SemaphoreIntegrationTest {
-    private lateinit var instances: List<LettucePooled<String, String>>
+    private lateinit var instances: List<LettuceUnified<String, String>>
     private lateinit var backends: List<LocksBackend>
 
     @BeforeEach

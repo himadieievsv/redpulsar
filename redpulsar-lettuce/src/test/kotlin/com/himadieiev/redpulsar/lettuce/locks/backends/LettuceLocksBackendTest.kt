@@ -30,12 +30,13 @@ class LettuceLocksBackendTest {
         val pool = mockk<GenericObjectPool<StatefulRedisConnection<String, String>>>()
         val connection = mockk<StatefulRedisConnection<String, String>>()
         sync = mockk()
-        redis = LettucePooled(pool)
-        backend = LettuceLocksBackend(redis)
         every { pool.borrowObject() } returns connection
         every { pool.returnObject(connection) } returns Unit
         every { connection.sync() } returns sync
+        every { connection.close() } returns Unit
         every { connection.isMulti } returns false
+        redis = LettucePooled(pool)
+        backend = LettuceLocksBackend(redis)
     }
 
     @Nested

@@ -1,7 +1,7 @@
 package com.himadieiev.redpulsar.lettuce.abstracts
 
-import io.lettuce.core.api.sync.RedisCommands
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands
 
 interface LettuceUnified<K, V> {
-    fun <R> sync(consumer: (sync: RedisCommands<K, V>) -> R): R
+    fun <R> sync(consumer: (sync: RedisClusterCommands<K, V>) -> R): R
 }

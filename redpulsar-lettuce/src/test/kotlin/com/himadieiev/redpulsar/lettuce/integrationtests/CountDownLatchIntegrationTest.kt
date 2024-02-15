@@ -32,7 +32,7 @@ class CountDownLatchIntegrationTest {
     fun setUp() {
         instances = getInstances()
         instances.forEach {
-            it.sync { sync -> sync.flushall() }
+            it.syncPubSub { sync -> sync.flushall() }
         }
         backends = instances.map { LettuceCountDownLatchBackend(it) }
     }
@@ -97,8 +97,8 @@ class CountDownLatchIntegrationTest {
 
     @Test
     fun `not enough count downs`() {
-        val countingLatches = createLatches(3, 3, "latch1")
-        val waitingLatch = createLatch(4, "latch1")
+        val countingLatches = createLatches(3, 3, "latch2")
+        val waitingLatch = createLatch(4, "latch2")
 
         countingLatches.forEach {
             it.countDown()

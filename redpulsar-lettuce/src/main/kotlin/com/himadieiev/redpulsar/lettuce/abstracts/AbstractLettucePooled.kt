@@ -3,8 +3,8 @@ package com.himadieiev.redpulsar.lettuce.abstracts
 import com.himadieiev.redpulsar.lettuce.exceptions.LettucePooledException
 import io.lettuce.core.api.StatefulConnection
 import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.sync.RedisCommands
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands
 import mu.KotlinLogging
 import org.apache.commons.pool2.impl.GenericObjectPool
 
@@ -31,11 +31,11 @@ abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <R> sync(consumer: (sync: RedisCommands<K, V>) -> R): R {
+    override fun <R> sync(consumer: (sync: RedisClusterCommands<K, V>) -> R): R {
         return execute { connection ->
             when (connection) {
-                is StatefulRedisConnection<*, *> -> consumer(connection.sync() as RedisCommands<K, V>)
-                is StatefulRedisClusterConnection<*, *> -> consumer(connection.sync() as RedisCommands<K, V>)
+                is StatefulRedisConnection<*, *> -> consumer(connection.sync() as RedisClusterCommands<K, V>)
+                is StatefulRedisClusterConnection<*, *> -> consumer(connection.sync() as RedisClusterCommands<K, V>)
                 else -> throw IllegalStateException("Connection pool of wrong type.")
             }
         }
