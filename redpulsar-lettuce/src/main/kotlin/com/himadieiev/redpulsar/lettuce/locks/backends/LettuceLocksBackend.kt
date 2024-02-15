@@ -6,7 +6,6 @@ import com.himadieiev.redpulsar.core.common.SET_SEMAPHORE_LOCK_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
-import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs

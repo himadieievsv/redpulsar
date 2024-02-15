@@ -1,10 +1,7 @@
 import com.himadieiev.redpulsar.lettuce.LettuceClusterPooled
-import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
-import io.lettuce.core.RedisClient
 import io.lettuce.core.SetArgs
-import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.cluster.RedisClusterClient
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection
 import io.lettuce.core.codec.StringCodec
