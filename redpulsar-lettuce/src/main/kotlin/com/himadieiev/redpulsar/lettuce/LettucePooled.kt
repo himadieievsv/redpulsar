@@ -1,6 +1,7 @@
 package com.himadieiev.redpulsar.lettuce
 
 import com.himadieiev.redpulsar.lettuce.abstracts.AbstractLettucePooled
+import io.lettuce.core.api.StatefulConnection
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.support.ConnectionPoolSupport
 import org.apache.commons.pool2.impl.GenericObjectPool
