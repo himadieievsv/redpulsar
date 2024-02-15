@@ -16,7 +16,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig
  */
 open class LettucePooled<K, V>(
     connectionPool: GenericObjectPool<StatefulRedisConnection<K, V>>,
-) : AbstractLettucePooled<K, V>(connectionPool) {
+) : AbstractLettucePooled<K, V, StatefulRedisConnection<K, V>>(connectionPool) {
     /**
      * Alternative constructor that uses a supplier and pool config for connections to redis.
      * @param poolConfig a configuration for the pool, argument have a default value.
@@ -26,40 +26,4 @@ open class LettucePooled<K, V>(
         poolConfig: GenericObjectPoolConfig<StatefulRedisConnection<K, V>> = GenericObjectPoolConfig(),
         connectionSupplier: () -> StatefulRedisConnection<K, V>,
     ) : this(ConnectionPoolSupport.createGenericObjectPool(connectionSupplier, poolConfig))
-
-    /**
-     * Executes a block of code with a connection from the pool.
-     * Redis command set is represented by [RedisCommands].
-     * @param consumer is a block of code to execute.
-     * @return a result of the block.
-     */
-    fun <R> sync(consumer: (sync: RedisCommands<K, V>) -> R): R {
-        return executeSync { sync ->
-            consumer(sync)
-        }
-    }
-
-    /**
-     * Executes a block of code with a connection from the pool.
-     * Redis command set is represented by [RedisAsyncCommands].
-     * @param consumer is a block of code to execute.
-     * @return a result of the block.
-     */
-    fun <R> async(consumer: (async: RedisAsyncCommands<K, V>) -> R): R {
-        return executeAsync { async ->
-            consumer(async)
-        }
-    }
-
-    /**
-     * Executes a block of code with a connection from the pool.
-     * Redis command set is represented by [RedisReactiveCommands].
-     * @param consumer is a block of code to execute.
-     * @return a result of the block.
-     */
-    fun <R> reactive(consumer: (reactive: RedisReactiveCommands<K, V>) -> R): R {
-        return executeReactive { reactive ->
-            consumer(reactive)
-        }
-    }
 }

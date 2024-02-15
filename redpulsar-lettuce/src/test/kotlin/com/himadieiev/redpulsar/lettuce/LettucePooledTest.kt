@@ -22,11 +22,12 @@ class LettucePooledTest {
     @BeforeEach
     fun setUp() {
         connectionPool = mockk<GenericObjectPool<StatefulRedisConnection<String, String>>>()
-        lettucePooled = LettucePooled(connectionPool)
         connection = mockk<StatefulRedisConnection<String, String>>()
         every { connection.isMulti } returns false
+        every { connection.close() } returns Unit
         every { connectionPool.borrowObject() } returns connection
         every { connectionPool.returnObject(eq(connection)) } returns Unit
+        lettucePooled = LettucePooled(connectionPool)
     }
 
     @Test
@@ -36,8 +37,10 @@ class LettucePooledTest {
 
         verify(exactly = 1) {
             connection.sync()
-            connectionPool.borrowObject()
             connectionPool.returnObject(eq(connection))
+        }
+        verify(exactly = 2) {
+            connectionPool.borrowObject()
         }
     }
 
@@ -51,33 +54,11 @@ class LettucePooledTest {
 
         verify(exactly = 1) {
             sync.discard()
-            connectionPool.borrowObject()
             connectionPool.returnObject(eq(connection))
         }
-        verify(exactly = 2) { connection.sync() }
-    }
-
-    @Test
-    fun `async calls success`() {
-        every { connection.async() } returns mockk()
-        lettucePooled.async {}
-
-        verify(exactly = 1) {
-            connection.async()
+        verify(exactly = 2) {
             connectionPool.borrowObject()
-            connectionPool.returnObject(eq(connection))
-        }
-    }
-
-    @Test
-    fun `reactive calls success`() {
-        every { connection.reactive() } returns mockk()
-        lettucePooled.reactive {}
-
-        verify(exactly = 1) {
-            connection.reactive()
-            connectionPool.borrowObject()
-            connectionPool.returnObject(eq(connection))
+            connection.sync()
         }
     }
 
@@ -86,6 +67,6 @@ class LettucePooledTest {
         every { connectionPool.borrowObject() } throws IOException()
 
         assertThrows<LettucePooledException> { lettucePooled.sync {} }
-        verify(exactly = 1) { connectionPool.borrowObject() }
+        verify(exactly = 2) { connectionPool.borrowObject() }
     }
 }
