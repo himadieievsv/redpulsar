@@ -63,6 +63,6 @@ fun getPooledInstances(): List<LettucePooled<String, String>> {
 
 private fun getHostPort(number: Int): String {
     val host = System.getenv("REDIS_HOST$number") ?: "localhost"
-    val port = System.getenv("REDIS_PORT$number")?.toInt() ?: (6380 + number)
+    val port = System.getenv("REDIS_PORT$number")?.toInt() ?: (7010 + 10 * (number - 1))
     return "redis://$host:$port"
 }
