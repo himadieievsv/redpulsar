@@ -37,13 +37,14 @@ class LettuceCountDownLatchBackendTest {
     fun setUp() {
         val pool = mockk<GenericObjectPool<StatefulRedisPubSubConnection<String, String>>>()
         val connection = mockk<StatefulRedisPubSubConnection<String, String>>()
-        redis = LettucePubSubPooled(pool)
         sync = mockk<RedisPubSubCommands<String, String>>()
-        countDownLatchBackend = LettuceCountDownLatchBackend(redis)
         every { pool.borrowObject() } returns connection
         every { pool.returnObject(connection) } returns Unit
         every { connection.sync() } returns sync
+        every { connection.close() } returns Unit
         every { connection.isMulti } returns false
+        redis = LettucePubSubPooled(pool)
+        countDownLatchBackend = LettuceCountDownLatchBackend(redis)
     }
 
     @Nested

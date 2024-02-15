@@ -30,7 +30,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
         val luaScript = loadScript(COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
-                redis.sync { sync ->
+                redis.syncPubSub { sync ->
                     sync.eval(
                         luaScript,
                         ScriptOutputType.STATUS,
@@ -50,7 +50,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
         count: Int,
     ): Long? {
         return failsafe(null) {
-            redis.sync { sync ->
+            redis.syncPubSub { sync ->
                 sync.srem(latchKeyName, "$clientId$count")
             }
         }
@@ -58,7 +58,7 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
 
     override fun checkCount(latchKeyName: String): Long? {
         return failsafe(null) {
-            redis.sync { sync ->
+            redis.syncPubSub { sync ->
                 sync.scard(latchKeyName)
             }
         }
