@@ -97,8 +97,8 @@ class CountDownLatchIntegrationTest {
 
     @Test
     fun `not enough count downs`() {
-        val countingLatches = createLatches(3, 3, "latch2")
-        val waitingLatch = createLatch(4, "latch2")
+        val countingLatches = createLatches(3, 3, "latch1-test1")
+        val waitingLatch = createLatch(4, "latch1-test1")
 
         countingLatches.forEach {
             it.countDown()
@@ -113,7 +113,7 @@ class CountDownLatchIntegrationTest {
 
     @Test
     fun `return correct number of counts`() {
-        val countingLatches = createLatch(3, "latch1")
+        val countingLatches = createLatch(3, "latch4")
 
         repeat(3) { i ->
             assertEquals(3 - i, countingLatches.getCount())
