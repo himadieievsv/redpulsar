@@ -6,6 +6,7 @@ import com.himadieiev.redpulsar.core.locks.Semaphore
 import com.himadieiev.redpulsar.core.locks.SimplifiedMutex
 import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
+import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceCountDownLatchBackend
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceLocksBackend
 import java.time.Duration
@@ -17,14 +18,14 @@ class LockFactory {
     companion object {
         /**
          * Create a new [SimplifiedMutex] instance.
-         * @param client [LettucePooled] the Jedis client instance to use for lock.
+         * @param client [LettuceUnified] the Jedis client instance to use for lock.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
          * @return [SimplifiedMutex] the lock instance.
          */
         @JvmStatic
         fun createSimplifiedMutex(
-            client: LettucePooled<String, String>,
+            client: LettuceUnified<String, String>,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
         ): SimplifiedMutex {
@@ -33,14 +34,14 @@ class LockFactory {
 
         /**
          * Create a new [Mutex] instance.
-         * @param clients [List]<[LettucePooled]> the Jedis client instances to use for lock.
+         * @param clients [List]<[LettuceUnified]> the Jedis client instances to use for lock.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
          * @return [Mutex] the lock instance.
          */
         @JvmStatic
         fun createMutex(
-            clients: List<LettucePooled<String, String>>,
+            clients: List<LettuceUnified<String, String>>,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
         ): Mutex {
@@ -50,7 +51,7 @@ class LockFactory {
 
         /**
          * Create a new [Semaphore] instance.
-         * @param clients [List]<[LettucePooled]> the Jedis client instances to use for lock.
+         * @param clients [List]<[LettuceUnified]> the Jedis client instances to use for lock.
          * @param maxLeases [Int] the maximum number of leases.
          * @param retryDelay [Duration] the delay between retries.
          * @param retryCount [Int] the number of retries.
@@ -58,7 +59,7 @@ class LockFactory {
          */
         @JvmStatic
         fun createSemaphore(
-            clients: List<LettucePooled<String, String>>,
+            clients: List<LettuceUnified<String, String>>,
             maxLeases: Int,
             retryDelay: Duration = Duration.ofMillis(100),
             retryCount: Int = 3,
