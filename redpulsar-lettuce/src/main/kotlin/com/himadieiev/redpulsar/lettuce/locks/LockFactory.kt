@@ -4,7 +4,6 @@ import com.himadieiev.redpulsar.core.locks.ListeningCountDownLatch
 import com.himadieiev.redpulsar.core.locks.Mutex
 import com.himadieiev.redpulsar.core.locks.Semaphore
 import com.himadieiev.redpulsar.core.locks.SimplifiedMutex
-import com.himadieiev.redpulsar.lettuce.LettucePooled
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
 import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
 import com.himadieiev.redpulsar.lettuce.locks.backends.LettuceCountDownLatchBackend
