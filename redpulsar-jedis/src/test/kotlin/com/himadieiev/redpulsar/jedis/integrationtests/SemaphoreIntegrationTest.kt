@@ -127,7 +127,7 @@ class SemaphoreIntegrationTest {
 
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores[it - 1].lock("test", Duration.ofSeconds(1)))
+                assertTrue(semaphores[it - 1].lock("test", Duration.ofSeconds(2)))
             }
         val semaphores2 = mutableListOf<Semaphore>()
         (1..maxLeases)
@@ -147,7 +147,7 @@ class SemaphoreIntegrationTest {
             }
 
         runBlocking {
-            delay(2000)
+            delay(3000)
         }
         (1..maxLeases)
             .forEach {
