@@ -7,10 +7,10 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.20"
     `java-library`
-    id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
-    id("org.jetbrains.kotlinx.kover") version "0.7.5"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
+    id("org.jetbrains.kotlinx.kover") version "0.8.3"
     `maven-publish`
     signing
     idea
