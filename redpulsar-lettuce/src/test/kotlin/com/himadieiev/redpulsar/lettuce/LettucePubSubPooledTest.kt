@@ -37,10 +37,10 @@ class LettucePubSubPooledTest {
 
         verify(exactly = 1) {
             connection.sync()
-            connectionPool.returnObject(eq(connection))
         }
         verify(exactly = 2) {
             connectionPool.borrowObject()
+            connectionPool.returnObject(eq(connection))
         }
     }
 
@@ -54,11 +54,11 @@ class LettucePubSubPooledTest {
 
         verify(exactly = 1) {
             sync.discard()
-            connectionPool.returnObject(eq(connection))
         }
         verify(exactly = 2) {
             connection.sync()
             connectionPool.borrowObject()
+            connectionPool.returnObject(eq(connection))
         }
     }
 
