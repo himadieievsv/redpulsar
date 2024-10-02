@@ -10,7 +10,7 @@ jobs:
   integration-test:
     strategy:
       matrix:
-        version: [ 11, 17, 21, 25 ]
+        version: [ 11, 17, 21, 23 ]
     runs-on: ubuntu-latest
     services:
       redis1:
