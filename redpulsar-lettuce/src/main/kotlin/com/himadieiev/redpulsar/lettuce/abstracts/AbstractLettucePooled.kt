@@ -16,6 +16,8 @@ import org.apache.commons.pool2.impl.GenericObjectPool
 abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
     protected val connectionPool: GenericObjectPool<T>,
 ) : AutoCloseable, LettuceUnified<K, V> {
+    protected val logger = KotlinLogging.logger { }
+
     init {
         val connection = connectionPool.borrowObject()
         if (connection !is StatefulRedisConnection<*, *> && connection !is StatefulRedisClusterConnection<*, *>) {
@@ -56,11 +58,14 @@ abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
                 try {
                     connection.sync().discard()
                 } catch (e: Exception) {
-                    val logger = KotlinLogging.logger { }
                     logger.error(e) { "Could not discard a transaction." }
                 }
             }
-            connectionPool.returnObject(connection)
+            try {
+                connectionPool.returnObject(connection)
+            } catch (e: IllegalStateException) {
+                logger.info { "Failed to return connection to the pool. Skipping error: " + e.message }
+            }
         }
     }
 }
