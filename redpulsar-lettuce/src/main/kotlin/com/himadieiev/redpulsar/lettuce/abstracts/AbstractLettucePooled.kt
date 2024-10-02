@@ -17,13 +17,13 @@ abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
     protected val connectionPool: GenericObjectPool<T>,
 ) : AutoCloseable, LettuceUnified<K, V> {
     init {
-        connectionPool.borrowObject().use { connection ->
-            if (connection !is StatefulRedisConnection<*, *> && connection !is StatefulRedisClusterConnection<*, *>) {
-                throw IllegalArgumentException(
-                    "Connection pool must be of type StatefulRedisConnection or StatefulRedisClusterConnection.",
-                )
-            }
+        val connection = connectionPool.borrowObject()
+        if (connection !is StatefulRedisConnection<*, *> && connection !is StatefulRedisClusterConnection<*, *>) {
+            throw IllegalArgumentException(
+                "Connection pool must be of type StatefulRedisConnection or StatefulRedisClusterConnection.",
+            )
         }
+        connectionPool.returnObject(connection)
     }
 
     override fun close() {
@@ -57,7 +57,7 @@ abstract class AbstractLettucePooled<K, V, T : StatefulConnection<K, V>>(
                     connection.sync().discard()
                 } catch (e: Exception) {
                     val logger = KotlinLogging.logger { }
-                    logger.error(e) { "Could not discard transaction." }
+                    logger.error(e) { "Could not discard a transaction." }
                 }
             }
             connectionPool.returnObject(connection)
