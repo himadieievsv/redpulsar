@@ -6,6 +6,7 @@ import com.himadieiev.redpulsar.core.common.SET_SEMAPHORE_LOCK_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
+import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.params.SetParams
 import java.time.Duration
@@ -29,7 +30,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
     ): String? {
         val luaScript = loadScript(REMOVE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
-            convertToString(jedis.eval(luaScript, listOf(resourceName), listOf(clientId)))
+            convertToString(jedis.evalSha1(luaScript, listOf(resourceName), listOf(clientId)))
         }
     }
 
@@ -43,7 +44,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
         val luaScript = loadScript(SET_SEMAPHORE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
-                jedis.eval(
+                jedis.evalSha1(
                     luaScript,
                     listOf(leasersKey, leaserValidityKey),
                     listOf(clientId, maxLeases.toString(), ttl.toMillis().toString()),
@@ -73,7 +74,7 @@ internal class JedisLocksBackend(private val jedis: UnifiedJedis) : LocksBackend
     ): String? {
         val luaScript = loadScript(CLEAN_UP_EXPIRED_SEMAPHORE_LOCKS_SCRIPT_PATH)
         return failsafe(null) {
-            convertToString(jedis.eval(luaScript, listOf(leasersKey), listOf(leaserValidityKeyPrefix)))
+            convertToString(jedis.evalSha1(luaScript, listOf(leasersKey), listOf(leaserValidityKeyPrefix)))
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
+import com.himadieiev.redpulsar.core.common.LuaScriptEntry
+import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -42,7 +44,7 @@ class JedisCountDownLatchBackendTest {
         fun `count successful`() {
             val clientId = "uuid"
             every {
-                redis.eval(
+                redis.evalSha1(
                     any(),
                     eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
@@ -53,7 +55,7 @@ class JedisCountDownLatchBackendTest {
 
             assertEquals("OK", callResult)
             verify(exactly = 1) {
-                redis.eval(any<String>(), any<List<String>>(), any<List<String>>())
+                redis.evalSha1(any<LuaScriptEntry>(), any<List<String>>(), any<List<String>>())
             }
         }
 
@@ -61,7 +63,7 @@ class JedisCountDownLatchBackendTest {
         fun `in count throws exception`() {
             val clientId = "uuid"
             every {
-                redis.eval(
+                redis.evalSha1(
                     any(),
                     eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
@@ -72,7 +74,7 @@ class JedisCountDownLatchBackendTest {
 
             assertNull(callResult)
             verify(exactly = 1) {
-                redis.eval(any<String>(), any<List<String>>(), any<List<String>>())
+                redis.evalSha1(any<LuaScriptEntry>(), any<List<String>>(), any<List<String>>())
             }
         }
     }
