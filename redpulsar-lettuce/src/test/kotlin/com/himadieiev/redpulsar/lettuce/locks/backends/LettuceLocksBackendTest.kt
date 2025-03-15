@@ -1,6 +1,8 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
+import com.himadieiev.redpulsar.core.common.LuaScriptEntry
 import com.himadieiev.redpulsar.lettuce.LettucePooled
+import com.himadieiev.redpulsar.lettuce.evalCashed
 import equalsTo
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs
@@ -100,13 +102,13 @@ class LettuceLocksBackendTest {
         fun `remove lock successful`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
+                sync.evalsha<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             } returns "OK"
             val permit = backend.removeLock("test", clientId)
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
+                sync.evalsha<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             }
             verify(exactly = 0) {
                 sync.set(any<String>(), any(), any())
@@ -117,7 +119,7 @@ class LettuceLocksBackendTest {
         fun `remove lock failed`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
+                sync.evalsha<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             } returns null
             val permit = backend.removeLock("test", clientId)
 
@@ -128,7 +130,7 @@ class LettuceLocksBackendTest {
         fun `remove lock throws exception`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
+                sync.evalsha<String>(any<String>(), eq(ScriptOutputType.INTEGER), eq(arrayOf("test")), eq(clientId))
             } throws IOException("test exception")
             val permit = backend.removeLock("test", clientId)
 
@@ -142,7 +144,7 @@ class LettuceLocksBackendTest {
         fun `set semaphore lock successful`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -155,7 +157,7 @@ class LettuceLocksBackendTest {
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -170,7 +172,7 @@ class LettuceLocksBackendTest {
         fun `set semaphore lock failed`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -183,7 +185,7 @@ class LettuceLocksBackendTest {
 
             assertNull(permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -198,7 +200,7 @@ class LettuceLocksBackendTest {
         fun `set semaphore lock throws exceptions`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -211,7 +213,7 @@ class LettuceLocksBackendTest {
 
             assertNull(permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.VALUE),
                     eq(arrayOf("test-key1", "test-key2")),
@@ -259,7 +261,7 @@ class LettuceLocksBackendTest {
         @Test
         fun `clean up semaphore locks successful`() {
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
@@ -270,7 +272,7 @@ class LettuceLocksBackendTest {
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
@@ -282,7 +284,7 @@ class LettuceLocksBackendTest {
         @Test
         fun `clean up semaphore locks failed`() {
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
@@ -293,7 +295,7 @@ class LettuceLocksBackendTest {
 
             assertNull(permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
@@ -305,7 +307,7 @@ class LettuceLocksBackendTest {
         @Test
         fun `clean up semaphore locks throws exception`() {
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
@@ -316,7 +318,7 @@ class LettuceLocksBackendTest {
 
             assertNull(permit)
             verify(exactly = 1) {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("test-key")),
