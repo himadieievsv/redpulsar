@@ -4,6 +4,7 @@ import com.himadieiev.redpulsar.core.common.COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH
 import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
+import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
@@ -28,7 +29,7 @@ internal class JedisCountDownLatchBackend(private val jedis: UnifiedJedis) : Cou
         val luaScript = loadScript(COUNT_DOWN_LATCH_COUNT_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
-                jedis.eval(
+                jedis.evalSha1(
                     luaScript,
                     listOf(latchKeyName, channelName),
                     listOf("$clientId$count", ttl.toMillis().toString(), initialCount.toString()),

@@ -5,6 +5,7 @@ import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.CountDownLatchBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
+import com.himadieiev.redpulsar.lettuce.evalCashed
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.pubsub.RedisPubSubListener
 import kotlinx.coroutines.channels.awaitClose
@@ -31,13 +32,11 @@ internal class LettuceCountDownLatchBackend(private val redis: LettucePubSubPool
         return failsafe(null) {
             convertToString(
                 redis.syncPubSub { sync ->
-                    sync.eval(
+                    sync.evalCashed(
                         luaScript,
                         ScriptOutputType.STATUS,
                         arrayOf(latchKeyName, channelName),
-                        "$clientId$count",
-                        ttl.toMillis().toString(),
-                        initialCount.toString(),
+                        arrayOf("$clientId$count", ttl.toMillis().toString(), initialCount.toString()),
                     )
                 },
             )

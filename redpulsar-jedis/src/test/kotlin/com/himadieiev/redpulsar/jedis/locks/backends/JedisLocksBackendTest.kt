@@ -1,6 +1,8 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
 import TestTags
+import com.himadieiev.redpulsar.core.common.LuaScriptEntry
+import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import equalsTo
 import io.mockk.every
 import io.mockk.mockk
@@ -96,12 +98,12 @@ class JedisLocksBackendTest {
         @Test
         fun `remove lock successful`() {
             val clientId = "uuid"
-            every { redis.eval(any(), eq(listOf("test")), eq(listOf(clientId))) } returns "OK"
+            every { redis.evalSha1(any(), eq(listOf("test")), eq(listOf(clientId))) } returns "OK"
             val permit = lock.removeLock("test", clientId)
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                redis.eval(any(), eq(listOf("test")), eq(listOf(clientId)))
+                redis.evalSha1(any(), eq(listOf("test")), eq(listOf(clientId)))
             }
             verify(exactly = 0) {
                 redis.set(any<String>(), any(), any())
@@ -111,7 +113,7 @@ class JedisLocksBackendTest {
         @Test
         fun `remove lock failed`() {
             val clientId = "uuid"
-            every { redis.eval(any(), eq(listOf("test")), eq(listOf(clientId))) } returns null
+            every { redis.evalSha1(any(), eq(listOf("test")), eq(listOf(clientId))) } returns null
             val permit = lock.removeLock("test", clientId)
 
             assertNull(permit)
@@ -120,7 +122,7 @@ class JedisLocksBackendTest {
         @Test
         fun `remove lock throws exception`() {
             val clientId = "uuid"
-            every { redis.eval(any(), eq(listOf("test")), eq(listOf(clientId))) } throws IOException("test exception")
+            every { redis.evalSha1(any(), eq(listOf("test")), eq(listOf(clientId))) } throws IOException("test exception")
             val permit = lock.removeLock("test", clientId)
 
             assertNull(permit)
@@ -133,13 +135,13 @@ class JedisLocksBackendTest {
         fun `set semaphore lock successful`() {
             val clientId = "uuid"
             every {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             } returns "OK"
             val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             }
         }
 
@@ -147,13 +149,13 @@ class JedisLocksBackendTest {
         fun `set semaphore lock failed`() {
             val clientId = "uuid"
             every {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             } returns null
             val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 4, Duration.ofSeconds(5))
 
             assertNull(permit)
             verify(exactly = 1) {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "4", "5000")))
             }
         }
 
@@ -161,13 +163,13 @@ class JedisLocksBackendTest {
         fun `set semaphore lock throws exceptions`() {
             val clientId = "uuid"
             every {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
             } throws IOException("test exception")
             val permit = lock.setSemaphoreLock("test-key1", "test-key2", clientId, 10, Duration.ofMillis(100))
 
             assertNull(permit)
             verify(exactly = 1) {
-                redis.eval(any<String>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
+                redis.evalSha1(any<LuaScriptEntry>(), eq(listOf("test-key1", "test-key2")), eq(listOf(clientId, "10", "100")))
             }
         }
     }
@@ -219,30 +221,30 @@ class JedisLocksBackendTest {
     inner class CleanUpExpiredSemaphoreLocksTests {
         @Test
         fun `clean up semaphore locks successful`() {
-            every { redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix"))) } returns "OK"
+            every { redis.evalSha1(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix"))) } returns "OK"
             val permit = lock.cleanUpExpiredSemaphoreLocks("test-key", "test-key-prefix")
 
             assertEquals("OK", permit)
             verify(exactly = 1) {
-                redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
+                redis.evalSha1(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
             }
         }
 
         @Test
         fun `clean up semaphore locks failed`() {
-            every { redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix"))) } returns null
+            every { redis.evalSha1(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix"))) } returns null
             val permit = lock.cleanUpExpiredSemaphoreLocks("test-key", "test-key-prefix")
 
             assertNull(permit)
             verify(exactly = 1) {
-                redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
+                redis.evalSha1(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
             }
         }
 
         @Test
         fun `clean up semaphore locks throws exception`() {
             every {
-                redis.eval(
+                redis.evalSha1(
                     any(),
                     eq(listOf("test-key")),
                     eq(listOf("test-key-prefix")),
@@ -252,7 +254,7 @@ class JedisLocksBackendTest {
 
             assertNull(permit)
             verify(exactly = 1) {
-                redis.eval(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
+                redis.evalSha1(any(), eq(listOf("test-key")), eq(listOf("test-key-prefix")))
             }
         }
     }
