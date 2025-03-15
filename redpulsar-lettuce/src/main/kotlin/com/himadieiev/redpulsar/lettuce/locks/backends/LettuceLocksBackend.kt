@@ -7,6 +7,7 @@ import com.himadieiev.redpulsar.core.common.loadScript
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import com.himadieiev.redpulsar.core.utils.failsafe
 import com.himadieiev.redpulsar.lettuce.abstracts.LettuceUnified
+import com.himadieiev.redpulsar.lettuce.evalCashed
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs
 import java.time.Duration
@@ -33,7 +34,14 @@ internal class LettuceLocksBackend(private val redis: LettuceUnified<String, Str
         val luaScript = loadScript(REMOVE_LOCK_SCRIPT_PATH)
         return failsafe(null) {
             convertToString(
-                redis.sync { sync -> sync.eval(luaScript, ScriptOutputType.INTEGER, arrayOf(resourceName), clientId) },
+                redis.sync { sync ->
+                    sync.evalCashed(
+                        luaScript,
+                        ScriptOutputType.INTEGER,
+                        arrayOf(resourceName),
+                        arrayOf(clientId)
+                    )
+                },
             )
         }
     }
@@ -49,13 +57,11 @@ internal class LettuceLocksBackend(private val redis: LettuceUnified<String, Str
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->
-                    sync.eval(
+                    sync.evalCashed(
                         luaScript,
                         ScriptOutputType.VALUE,
                         arrayOf(leasersKey, leaserValidityKey),
-                        clientId,
-                        maxLeases.toString(),
-                        ttl.toMillis().toString(),
+                        arrayOf(clientId, maxLeases.toString(), ttl.toMillis().toString()),
                     )
                 },
             )
@@ -84,11 +90,11 @@ internal class LettuceLocksBackend(private val redis: LettuceUnified<String, Str
         return failsafe(null) {
             convertToString(
                 redis.sync { sync ->
-                    sync.eval(
+                    sync.evalCashed(
                         luaScript,
                         ScriptOutputType.STATUS,
                         arrayOf(leasersKey),
-                        leaserValidityKeyPrefix,
+                        arrayOf(leaserValidityKeyPrefix),
                     )
                 },
             )

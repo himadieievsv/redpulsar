@@ -1,6 +1,8 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
+import com.himadieiev.redpulsar.core.common.LuaScriptEntry
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
+import com.himadieiev.redpulsar.lettuce.evalCashed
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.pubsub.RedisPubSubListener
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
@@ -53,7 +55,7 @@ class LettuceCountDownLatchBackendTest {
         fun `count successful`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("latch:test", "latch:test:channel")),
@@ -65,7 +67,7 @@ class LettuceCountDownLatchBackendTest {
 
             Assertions.assertEquals("OK", callResult)
             verify(exactly = 1) {
-                sync.eval<String>(any<String>(), any(), any<Array<String>>(), any(), any(), any())
+                sync.evalsha<String>(any<String>(), any(), any<Array<String>>(), any(), any(), any())
             }
         }
 
@@ -73,7 +75,7 @@ class LettuceCountDownLatchBackendTest {
         fun `in count throws exception`() {
             val clientId = "uuid"
             every {
-                sync.eval<String>(
+                sync.evalsha<String>(
                     any<String>(),
                     eq(ScriptOutputType.STATUS),
                     eq(arrayOf("latch:test", "latch:test:channel")),
@@ -85,7 +87,7 @@ class LettuceCountDownLatchBackendTest {
 
             Assertions.assertNull(callResult)
             verify(exactly = 1) {
-                sync.eval<String>(any<String>(), any(), any<Array<String>>(), any(), any(), any())
+                sync.evalsha<String>(any<String>(), any(), any<Array<String>>(), any(), any(), any())
             }
         }
     }
