@@ -22,7 +22,7 @@ class FailsafeTest {
     fun `supress top level exception`() {
         assertDoesNotThrow {
             failsafe(0) {
-                throw Exception("test")
+                throw Exception("test exception")
             }
         }
     }
