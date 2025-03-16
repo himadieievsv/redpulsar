@@ -39,7 +39,7 @@ internal class LettuceLocksBackend(private val redis: LettuceUnified<String, Str
                         luaScript,
                         ScriptOutputType.INTEGER,
                         arrayOf(resourceName),
-                        arrayOf(clientId)
+                        arrayOf(clientId),
                     )
                 },
             )

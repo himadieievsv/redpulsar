@@ -6,7 +6,10 @@ import java.util.concurrent.ConcurrentHashMap
 class ScriptCache {
     private val cache = ConcurrentHashMap<String, LuaScriptEntry>()
 
-    fun addScript(scriptName: String, script: String): LuaScriptEntry {
+    fun addScript(
+        scriptName: String,
+        script: String,
+    ): LuaScriptEntry {
         val entry = LuaScriptEntry(script.sha1(), script)
         cache[scriptName] = entry
         return entry
