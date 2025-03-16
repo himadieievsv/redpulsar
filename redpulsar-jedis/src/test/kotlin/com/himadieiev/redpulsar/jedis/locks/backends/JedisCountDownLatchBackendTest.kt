@@ -1,7 +1,5 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
-import com.himadieiev.redpulsar.core.common.LuaScriptEntry
-import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
