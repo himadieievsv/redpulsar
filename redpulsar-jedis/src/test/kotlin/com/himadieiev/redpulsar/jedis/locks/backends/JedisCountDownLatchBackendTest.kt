@@ -44,7 +44,7 @@ class JedisCountDownLatchBackendTest {
         fun `count successful`() {
             val clientId = "uuid"
             every {
-                redis.evalSha1(
+                redis.evalsha(
                     any(),
                     eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
@@ -55,7 +55,7 @@ class JedisCountDownLatchBackendTest {
 
             assertEquals("OK", callResult)
             verify(exactly = 1) {
-                redis.evalSha1(any<LuaScriptEntry>(), any<List<String>>(), any<List<String>>())
+                redis.evalsha(any(), any<List<String>>(), any<List<String>>())
             }
         }
 
@@ -63,7 +63,7 @@ class JedisCountDownLatchBackendTest {
         fun `in count throws exception`() {
             val clientId = "uuid"
             every {
-                redis.evalSha1(
+                redis.evalsha(
                     any(),
                     eq(listOf("latch:test", "latch:test:channel")),
                     eq(listOf("${clientId}0", "5000", "4")),
@@ -74,7 +74,7 @@ class JedisCountDownLatchBackendTest {
 
             assertNull(callResult)
             verify(exactly = 1) {
-                redis.evalSha1(any<LuaScriptEntry>(), any<List<String>>(), any<List<String>>())
+                redis.evalsha(any(), any<List<String>>(), any<List<String>>())
             }
         }
     }
