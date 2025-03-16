@@ -1,8 +1,6 @@
 package com.himadieiev.redpulsar.jedis.locks.backends
 
 import TestTags
-import com.himadieiev.redpulsar.core.common.LuaScriptEntry
-import com.himadieiev.redpulsar.jedis.locks.evalSha1
 import equalsTo
 import io.mockk.every
 import io.mockk.mockk
