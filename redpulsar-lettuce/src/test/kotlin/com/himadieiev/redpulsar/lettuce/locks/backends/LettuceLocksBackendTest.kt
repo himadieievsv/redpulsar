@@ -1,8 +1,6 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
-import com.himadieiev.redpulsar.core.common.LuaScriptEntry
 import com.himadieiev.redpulsar.lettuce.LettucePooled
-import com.himadieiev.redpulsar.lettuce.evalCashed
 import equalsTo
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs

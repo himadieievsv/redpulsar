@@ -1,8 +1,6 @@
 package com.himadieiev.redpulsar.lettuce.locks.backends
 
-import com.himadieiev.redpulsar.core.common.LuaScriptEntry
 import com.himadieiev.redpulsar.lettuce.LettucePubSubPooled
-import com.himadieiev.redpulsar.lettuce.evalCashed
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.pubsub.RedisPubSubListener
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
