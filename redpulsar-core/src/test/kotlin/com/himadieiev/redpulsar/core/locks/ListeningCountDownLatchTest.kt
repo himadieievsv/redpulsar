@@ -507,7 +507,7 @@ class ListeningCountDownLatchTest {
             }
             val latch =
                 ListeningCountDownLatch(
-                    name ="test",
+                    name = "test",
                     count = 2,
                     backends = instances,
                     retryCount = 1,
