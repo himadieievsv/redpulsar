@@ -25,7 +25,7 @@ jobs:
           :redpulsar-core:koverXmlReport \
           :redpulsar-jedis:koverXmlReport \
           :redpulsar-lettuce:koverXmlReport \
-          -DexcludeTags="integration" -i
+          -DexcludeTags="integration"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
