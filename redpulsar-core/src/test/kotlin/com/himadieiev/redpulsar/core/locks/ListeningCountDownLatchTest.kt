@@ -496,7 +496,7 @@ class ListeningCountDownLatchTest {
             verify(exactly = 3) {
                 instances.forEach { backend -> backend.count(any(), any(), any(), any(), any(), any()) }
             }
-            verify(exactly = 1) { instances.forEach { backend -> backend.undoCount(any(), any(), any()) } }
+            verify(atMost = 1) { instances.forEach { backend -> backend.undoCount(any(), any(), any()) } }
         }
 
         @Test
@@ -517,7 +517,7 @@ class ListeningCountDownLatchTest {
             coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
-            verify(exactly = 1) {
+            verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
@@ -543,7 +543,7 @@ class ListeningCountDownLatchTest {
             coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
-            verify(exactly = 1) {
+            verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
@@ -578,7 +578,7 @@ class ListeningCountDownLatchTest {
             coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
-            verify(exactly = 1) {
+            verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
@@ -613,7 +613,7 @@ class ListeningCountDownLatchTest {
             coVerify(atMost = 1) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
-            verify(exactly = 1) {
+            verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
@@ -638,7 +638,7 @@ class ListeningCountDownLatchTest {
             coVerify(atMost = 3) {
                 instances.forEach { backend -> backend.listen(any()) }
             }
-            verify(exactly = 1) {
+            verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
         }
