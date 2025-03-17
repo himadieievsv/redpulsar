@@ -507,10 +507,9 @@ class ListeningCountDownLatchTest {
             }
             val latch =
                 ListeningCountDownLatch(
-                    "test",
-                    2,
+                    name ="test",
+                    count = 2,
                     backends = instances,
-                    retryDelay = Duration.ofMillis(1),
                     retryCount = 1,
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
