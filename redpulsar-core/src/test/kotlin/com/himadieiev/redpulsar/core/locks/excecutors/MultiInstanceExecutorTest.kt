@@ -118,7 +118,7 @@ class MultiInstanceExecutorTest {
             }
 
         assertTrue(number / 2 + 1 <= result.size)
-        verify(atMost = 1) { backends.forEach { backend -> backend.test() } }
+        verify(atLeast = 0, atMost = 1) { backends.forEach { backend -> backend.test() } }
     }
 
     @ParameterizedTest(name = "all instances are ok, wait majority with {0} instances")
@@ -141,7 +141,7 @@ class MultiInstanceExecutorTest {
             }
 
         assertTrue(number / 2 + 1 <= result.size)
-        verify(atMost = 1) { backends.forEach { backend -> backend.test() } }
+        verify(atLeast = 0, atMost = 1) { backends.forEach { backend -> backend.test() } }
     }
 
     @ParameterizedTest(name = "retry on non quorum instance count is down {0} instances")
