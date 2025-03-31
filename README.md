@@ -33,9 +33,9 @@ RedPulsar project is written in Kotlin, but can be easily used in Java projects 
 
 Gradle dependency:
 ```kotlin
-implementation("com.himadieiev:redpulsar-jedis:1.3.2")
+implementation("com.himadieiev:redpulsar-jedis:1.4.0")
 // OR
-implementation("com.himadieiev:redpulsar-lettuce:1.3.2")
+implementation("com.himadieiev:redpulsar-lettuce:1.4.0")
 ```
 
 - See [Getting started with redpulsar-jedis](./redpulsar-jedis/README.md#getting-started) for getting started with Jedis client.
