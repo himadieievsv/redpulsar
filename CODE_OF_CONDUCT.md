@@ -14,7 +14,7 @@ Contributors are expected to:
 
 ## Reporting Issues
 
-If you experience or witness unacceptable behavior, please report it by emailing [maintainers@yourdomain.com].
+If you experience or witness unacceptable behavior, please report it by any available method from [CODEOWNERS](./.github/CODEOWNERS) profile.
 
 All reports will be handled confidentially and seriously.
 
