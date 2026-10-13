@@ -99,4 +99,22 @@ class SimplifiedMutexTest {
             assertThrows<IllegalArgumentException> { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
         }
     }
+
+    @Test
+    fun `lock propagates exception from backend`() {
+        every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException("boom")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+        assertThrows<RuntimeException> { simplifiedMutex.lock("test", Duration.ofSeconds(10)) }
+    }
+
+    @Test
+    fun `unlock propagates exception from backend`() {
+        every { backend.removeLock(eq("test"), any()) } throws RuntimeException("boom")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+        assertThrows<RuntimeException> { simplifiedMutex.unlock("test") }
+    }
 }
