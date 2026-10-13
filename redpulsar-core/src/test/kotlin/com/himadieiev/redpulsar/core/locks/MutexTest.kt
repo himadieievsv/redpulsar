@@ -217,4 +217,80 @@ class MutexTest {
             }
         }
     }
+
+    @Nested
+    inner class QuorumAndTtlBoundaries {
+        @ParameterizedTest(name = "{0} backends, quorum minus one success does not acquire lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `quorum minus one success does not acquire lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns if (index < quorum - 1) "OK" else null
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(backends, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test", Duration.ofSeconds(10))
+
+            assertFalse(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, exactly quorum success acquires lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `exactly quorum success acquires lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns if (index < quorum) "OK" else null
+            }
+
+            val mutex = Mutex(backends, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test", Duration.ofSeconds(10))
+
+            assertTrue(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            verify(exactly = 0) {
+                backends.forEach { backend -> backend.removeLock(any(), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl equal to min clock drift is rejected")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl equal to min clock drift is rejected`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+
+            val mutex = Mutex(backends)
+            assertThrows<IllegalArgumentException> { mutex.lock("test", Duration.ofMillis(3L * number)) }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl above min clock drift is accepted")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl above min clock drift is accepted`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            backends.forEach { backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns "OK"
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(backends)
+            val permit = mutex.lock("test", Duration.ofMillis(3L * number + 100))
+
+            assertTrue(permit)
+        }
+    }
 }

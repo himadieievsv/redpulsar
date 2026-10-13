@@ -703,6 +703,124 @@ class ListeningCountDownLatchTest {
         }
     }
 
+    @Nested
+    inner class QuorumBoundaries {
+        @ParameterizedTest(name = "{0} backends, count down with exactly quorum success")
+        @ValueSource(ints = [2, 4, 5, 7])
+        fun `count down with exactly quorum success`(number: Int) {
+            val quorum = number / 2 + 1
+            val backends =
+                (1..number).map {
+                    mockk<CountDownLatchBackend>().also { backend ->
+                        backend.everyCount(
+                            "{countdownlatch:test}:",
+                            "{countdownlatch:test}:channel",
+                            4,
+                            4,
+                            Duration.ofMinutes(10),
+                            if (it <= quorum) "OK" else null,
+                        )
+                    }
+                }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    4,
+                    backends = backends,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertEquals(CallResult.SUCCESS, latch.countDown())
+
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.count(any(), any(), any(), any(), any(), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, count down below quorum fails")
+        @ValueSource(ints = [2, 4, 5, 7])
+        fun `count down below quorum fails`(number: Int) {
+            val quorum = number / 2 + 1
+            val backends =
+                (1..number).map {
+                    mockk<CountDownLatchBackend>().also { backend ->
+                        backend.everyCount(
+                            "{countdownlatch:test}:",
+                            "{countdownlatch:test}:channel",
+                            4,
+                            4,
+                            Duration.ofMinutes(10),
+                            if (it <= quorum - 1) "OK" else null,
+                        )
+                        backend.everyUndoCount("{countdownlatch:test}:", 4, 1)
+                    }
+                }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    4,
+                    backends = backends,
+                    retryCount = 1,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertEquals(CallResult.FAILED, latch.countDown())
+
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.count(any(), any(), any(), any(), any(), any()) }
+            }
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.undoCount(any(), any(), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, await with exactly majority of listens")
+        @ValueSource(ints = [2, 4, 5])
+        fun `await with exactly majority of listens`(number: Int) {
+            val quorum = number / 2 + 1
+            val backends =
+                (1..number).map {
+                    mockk<CountDownLatchBackend>().also { backend ->
+                        backend.everyCheckCount("{countdownlatch:test}:", 1)
+                        backend.everyListen(if (it <= quorum) "open" else null)
+                    }
+                }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    5,
+                    backends = backends,
+                    retryCount = 1,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertEquals(CallResult.SUCCESS, latch.await())
+        }
+
+        @ParameterizedTest(name = "{0} backends, await below majority of listens fails")
+        @ValueSource(ints = [2, 4, 5])
+        fun `await below majority of listens fails`(number: Int) {
+            val quorum = number / 2 + 1
+            val backends =
+                (1..number).map {
+                    mockk<CountDownLatchBackend>().also { backend ->
+                        backend.everyCheckCount("{countdownlatch:test}:", 1)
+                        backend.everyListen(if (it <= quorum - 1) "open" else null)
+                    }
+                }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    5,
+                    backends = backends,
+                    retryCount = 1,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertEquals(CallResult.FAILED, latch.await())
+        }
+    }
+
     private fun CountDownLatchBackend.everyCount(
         latchKeyName: String,
         channelName: String,
