@@ -4,8 +4,12 @@ import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -139,6 +143,65 @@ class SemaphoreTest {
             verify(exactly = 0) {
                 backend.setSemaphoreLock(any(), any(), any(), any(), any())
             }
+        }
+
+        @Test
+        fun `separate instances use distinct lease validity keys`() {
+            val validityKeys = mutableListOf<String>()
+            every {
+                backend.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            } answers {
+                validityKeys.add(secondArg())
+                "OK"
+            }
+
+            val semaphore1 = Semaphore(listOf(backend), 3)
+            val semaphore2 = Semaphore(listOf(backend), 3)
+
+            assertTrue(semaphore1.lock("test"))
+            assertTrue(semaphore2.lock("test"))
+
+            assertEquals(2, validityKeys.size)
+            assertNotEquals(validityKeys[0], validityKeys[1])
+        }
+
+        @Test
+        fun `max leases one behaves like mutex`() {
+            every {
+                backend.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(1),
+                    any(),
+                )
+            } returnsMany listOf("OK", null, "OK")
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+            } returns "OK"
+
+            val owner = Semaphore(listOf(backend), 1)
+            val contender = Semaphore(listOf(backend), 1, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertTrue(owner.lock("test"))
+            assertFalse(contender.lock("test"))
+
+            assertTrue(owner.unlock("test"))
+
+            assertTrue(contender.lock("test"))
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -380,6 +443,74 @@ class SemaphoreTest {
                         any(),
                     )
                     // cleaning up
+                    backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+                }
+            }
+        }
+
+        @Test
+        fun `lock declined due to clock drift`() {
+            every {
+                backend1.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend2.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } answers {
+                runBlocking { delay(40) }
+                "OK"
+            }
+            every {
+                backend3.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } returns "OK"
+            instances.forEach { backend ->
+                every {
+                    backend.removeSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                    )
+                } returns "OK"
+                every {
+                    backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+                } returns "OK"
+            }
+
+            val semaphore = Semaphore(instances, 3, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = semaphore.lock("test", Duration.ofMillis(40))
+
+            assertFalse(permit)
+            verify(exactly = 1) {
+                instances.forEach { backend ->
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(3),
+                        any(),
+                    )
+                    backend.removeSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                    )
                     backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
                 }
             }
