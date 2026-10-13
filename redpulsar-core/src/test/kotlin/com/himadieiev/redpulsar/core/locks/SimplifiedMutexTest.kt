@@ -166,4 +166,22 @@ class SimplifiedMutexTest {
             assertThrows<IllegalArgumentException> { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
         }
     }
+
+    @ParameterizedTest(name = "ttl {0} ms is rejected at boundary")
+    @ValueSource(longs = [-1, 0, 1, 2])
+    fun `ttl at min boundary is rejected`(ttl: Long) {
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertThrows<IllegalArgumentException> { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
+    }
+
+    @ParameterizedTest(name = "ttl {0} ms is accepted above boundary")
+    @ValueSource(longs = [3, 4, 100])
+    fun `ttl above min boundary is accepted`(ttl: Long) {
+        every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertTrue(simplifiedMutex.lock("test", Duration.ofMillis(ttl)))
+    }
 }
