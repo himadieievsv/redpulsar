@@ -4,11 +4,13 @@ import TestTags
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -65,7 +67,7 @@ class MutexTest {
 
             val mutex = Mutex(listOf(backend))
             // It cant be guarantied that the lock was actually acquired
-            mutex.unlock("test")
+            assertTrue(mutex.unlock("test"))
 
             verify(exactly = 1) {
                 backend.removeLock(eq("test"), any())
@@ -73,6 +75,35 @@ class MutexTest {
             verify(exactly = 0) {
                 backend.setLock(any(), any(), any())
             }
+        }
+
+        @Test
+        fun `unlock failed returns false`() {
+            every { backend.removeLock(eq("test"), any()) } returns null
+
+            val mutex = Mutex(listOf(backend), retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                backend.removeLock(eq("test"), any())
+            }
+        }
+
+        @Test
+        fun `non-owner unlock uses different client id`() {
+            val lockClientId = slot<String>()
+            val unlockClientId = slot<String>()
+            every { backend.setLock(eq("test"), capture(lockClientId), any()) } returns "OK"
+            every { backend.removeLock(eq("test"), capture(unlockClientId)) } returns null
+
+            val owner = Mutex(listOf(backend))
+            val nonOwner = Mutex(listOf(backend), retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertTrue(owner.lock("test", Duration.ofSeconds(10)))
+            assertFalse(nonOwner.unlock("test"))
+
+            assertNotEquals(lockClientId.captured, unlockClientId.captured)
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -213,6 +244,51 @@ class MutexTest {
                 instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
             }
             verify(exactly = 3) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
+        fun `unlock requires quorum - one of three is not enough`() {
+            every { backend1.removeLock(eq("test"), any()) } returns "OK"
+            every { backend2.removeLock(eq("test"), any()) } returns null
+            every { backend3.removeLock(eq("test"), any()) } returns null
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
+        fun `unlock succeeds with two of three`() {
+            every { backend1.removeLock(eq("test"), any()) } returns "OK"
+            every { backend2.removeLock(eq("test"), any()) } returns null
+            every { backend3.removeLock(eq("test"), any()) } returns "OK"
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertTrue(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
+        fun `unlock calls removeLock exactly once per backend on quorum miss`() {
+            instances.forEach { backend ->
+                every { backend.removeLock(eq("test"), any()) } returns null
+            }
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
                 instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
             }
         }
