@@ -103,6 +103,29 @@ class MutexTest {
             assertThrows<IllegalArgumentException> { Mutex(listOf()) }
         }
 
+        @Test
+        fun `lock returns false when backend throws`() {
+            every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException("boom")
+            every { backend.removeLock(eq("test"), any()) } returns "OK"
+
+            val mutex = Mutex(listOf(backend), retryCount = 2, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test", Duration.ofSeconds(10))
+
+            assertFalse(permit)
+            // executor scope is poisoned by the first failure, so retry does not re-run the callee
+            verify(exactly = 1) { backend.setLock(any(), any(), any()) }
+        }
+
+        @Test
+        fun `unlock returns false when backend throws`() {
+            every { backend.removeLock(eq("test"), any()) } throws RuntimeException("boom")
+
+            val mutex = Mutex(listOf(backend), retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+            verify(exactly = 1) { backend.removeLock(eq("test"), any()) }
+        }
+
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 7, 10])
         fun `validate ttl`(ttl: Long) {
