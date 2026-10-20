@@ -194,6 +194,28 @@ class MutexTest {
         }
 
         @Test
+        fun `lock acquired after retry`() {
+            every { backend1.setLock(eq("test"), any(), any()) } returnsMany listOf(null, "OK")
+            every { backend2.setLock(eq("test"), any(), any()) } returns "OK"
+            every { backend3.setLock(eq("test"), any(), any()) } returnsMany listOf(null, "OK")
+            instances.forEach { backend ->
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(instances, retryCount = 3, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test")
+
+            assertTrue(permit)
+            verify(exactly = 2) {
+                instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            // first attempt missed the quorum and partial locks were rolled back
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
         fun `lock declined due to clock drift`() {
             every { backend1.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend2.setLock(eq("test"), any(), any()) } answers {

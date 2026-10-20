@@ -53,6 +53,28 @@ class SimplifiedMutexTest {
     }
 
     @Test
+    fun `lock acquired after retries`() {
+        every { backend.setLock(eq("test"), any(), any()) } returnsMany listOf(null, null, "OK")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(1), retryCount = 3)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(10))
+
+        assertTrue(permit)
+        verify(exactly = 3) { backend.setLock(eq("test"), any(), any()) }
+    }
+
+    @Test
+    fun `retry count one makes single attempt`() {
+        every { backend.setLock(eq("test"), any(), any()) } returns null
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(1), retryCount = 1)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(10))
+
+        assertFalse(permit)
+        verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
+    }
+
+    @Test
     fun `unlock resource`() {
         every { backend.removeLock(eq("test"), any()) } returns "OK"
 

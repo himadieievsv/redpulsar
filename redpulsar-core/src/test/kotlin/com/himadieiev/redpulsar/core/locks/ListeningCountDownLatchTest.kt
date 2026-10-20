@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
@@ -91,6 +92,75 @@ class ListeningCountDownLatchTest {
 
             verify(exactly = 12) { backend.count(any(), any(), any(), any(), any(), any()) }
             verify(exactly = 12) { backend.undoCount(any(), any(), any()) }
+        }
+
+        @Test
+        fun `count down past zero returns success without backend calls`() {
+            backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 2, 2, returnVal = "OK")
+            backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 1, 2, returnVal = "OK")
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    2,
+                    listOf(backend),
+                    maxDuration = Duration.ofSeconds(10),
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertEquals(CallResult.SUCCESS, latch.countDown())
+            assertEquals(CallResult.SUCCESS, latch.countDown())
+            // internal counter is already 0, no backend interaction is expected
+            assertEquals(CallResult.SUCCESS, latch.countDown())
+
+            verify(exactly = 2) { backend.count(any(), any(), any(), any(), any(), any()) }
+            verify(exactly = 0) { backend.undoCount(any(), any(), any()) }
+        }
+
+        @Test
+        fun `await succeeds from local counter without listen`() {
+            backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 2, 2, returnVal = "OK")
+            backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 1, 2, returnVal = "OK")
+            // global count stays above zero, so only the local counter opens the latch
+            backend.everyCheckCount("{countdownlatch:test}:", 1)
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    2,
+                    listOf(backend),
+                    maxDuration = Duration.ofSeconds(10),
+                    retryDelay = Duration.ofMillis(1),
+                )
+            latch.countDown()
+            latch.countDown()
+
+            assertEquals(CallResult.SUCCESS, latch.await())
+
+            coVerify(exactly = 0) { backend.listen(any()) }
+        }
+
+        @ParameterizedTest(name = "await with timeout {0} ms is rejected")
+        @ValueSource(longs = [-1000, -1, 0, 50, 100])
+        fun `await timeout at or below minimum is rejected`(timeout: Long) {
+            val latch = ListeningCountDownLatch("test", 3, listOf(backend))
+
+            assertThrows<IllegalArgumentException> { latch.await(Duration.ofMillis(timeout)) }
+        }
+
+        @ParameterizedTest(name = "await with timeout {0} ms is accepted")
+        @ValueSource(longs = [101, 1000])
+        fun `await timeout above minimum is accepted`(timeout: Long) {
+            backend.everyCheckCount("{countdownlatch:test}:", 3)
+            val latch = ListeningCountDownLatch("test", 3, listOf(backend))
+
+            assertEquals(CallResult.SUCCESS, latch.await(Duration.ofMillis(timeout)))
+
+            coVerify(exactly = 0) { backend.listen(any()) }
+        }
+
+        @Test
+        fun `validate latch name with whitespace`() {
+            assertDoesNotThrow { ListeningCountDownLatch("test", 3, listOf(backend)) }
+            assertThrows<IllegalArgumentException> { ListeningCountDownLatch("   ", 3, listOf(backend)) }
         }
 
         @Test
@@ -700,6 +770,25 @@ class ListeningCountDownLatchTest {
             assertEquals(Int.MIN_VALUE, latch.getCount())
 
             verify(exactly = 3) { instances.forEach { backend -> backend.checkCount(any()) } }
+        }
+
+        @Test
+        fun `check count with all backends disagreeing is arbitrary`() {
+            backend1.everyCheckCount("{countdownlatch:test}:", 1)
+            backend2.everyCheckCount("{countdownlatch:test}:", 2)
+            backend3.everyCheckCount("{countdownlatch:test}:", 3)
+
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    4,
+                    backends = instances,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            // no majority exists, implementation picks an arbitrary value among the responders
+            assertTrue(latch.getCount() in setOf(1, 2, 3))
+            verify(exactly = 1) { instances.forEach { backend -> backend.checkCount(any()) } }
         }
     }
 
