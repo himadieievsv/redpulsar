@@ -124,7 +124,7 @@ class SemaphoreTest {
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
-            semaphore.unlock("test")
+            assertTrue(semaphore.unlock("test"))
 
             verify(exactly = 1) {
                 // unlocking
@@ -139,6 +139,42 @@ class SemaphoreTest {
             verify(exactly = 0) {
                 backend.setSemaphoreLock(any(), any(), any(), any(), any())
             }
+        }
+
+        @Test
+        fun `unlock failed returns false`() {
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                )
+            } returns null
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+            } returns "OK"
+
+            val semaphore = Semaphore(listOf(backend), 3)
+
+            assertFalse(semaphore.unlock("test"))
+        }
+
+        @Test
+        fun `cleanup failure does not flip unlock result`() {
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+            } returns null
+
+            val semaphore = Semaphore(listOf(backend), 3)
+
+            assertTrue(semaphore.unlock("test"))
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
