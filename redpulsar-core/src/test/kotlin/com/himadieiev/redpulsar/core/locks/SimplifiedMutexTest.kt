@@ -4,9 +4,11 @@ import TestTags
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -53,11 +55,33 @@ class SimplifiedMutexTest {
     }
 
     @Test
+    fun `lock acquired after retries`() {
+        every { backend.setLock(eq("test"), any(), any()) } returnsMany listOf(null, null, "OK")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(1), retryCount = 3)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(10))
+
+        assertTrue(permit)
+        verify(exactly = 3) { backend.setLock(eq("test"), any(), any()) }
+    }
+
+    @Test
+    fun `retry count one makes single attempt`() {
+        every { backend.setLock(eq("test"), any(), any()) } returns null
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(1), retryCount = 1)
+        val permit = simplifiedMutex.lock("test", Duration.ofSeconds(10))
+
+        assertFalse(permit)
+        verify(exactly = 1) { backend.setLock(eq("test"), any(), any()) }
+    }
+
+    @Test
     fun `unlock resource`() {
         every { backend.removeLock(eq("test"), any()) } returns "OK"
 
         val simplifiedMutex = SimplifiedMutex(backend)
-        simplifiedMutex.unlock("test")
+        assertTrue(simplifiedMutex.unlock("test"))
 
         verify(exactly = 1) {
             backend.removeLock(eq("test"), any())
@@ -65,6 +89,49 @@ class SimplifiedMutexTest {
         verify(exactly = 0) {
             backend.setLock(any(), any(), any())
         }
+    }
+
+    @Test
+    fun `unlock failed returns false`() {
+        every { backend.removeLock(eq("test"), any()) } returns null
+
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertFalse(simplifiedMutex.unlock("test"))
+
+        verify(exactly = 1) {
+            backend.removeLock(eq("test"), any())
+        }
+    }
+
+    @Test
+    fun `double unlock second call fails when key is gone`() {
+        every { backend.removeLock(eq("test"), any()) } returns "OK" andThen null
+
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertTrue(simplifiedMutex.unlock("test"))
+        assertFalse(simplifiedMutex.unlock("test"))
+
+        verify(exactly = 2) {
+            backend.removeLock(eq("test"), any())
+        }
+    }
+
+    @Test
+    fun `non-owner unlock uses different client id`() {
+        val lockClientId = slot<String>()
+        val unlockClientId = slot<String>()
+        every { backend.setLock(eq("test"), capture(lockClientId), any()) } returns "OK"
+        every { backend.removeLock(eq("test"), capture(unlockClientId)) } returns null
+
+        val owner = SimplifiedMutex(backend)
+        val nonOwner = SimplifiedMutex(backend)
+
+        assertTrue(owner.lock("test", Duration.ofSeconds(10)))
+        assertFalse(nonOwner.unlock("test"))
+
+        assertNotEquals(lockClientId.captured, unlockClientId.captured)
     }
 
     @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -116,5 +183,23 @@ class SimplifiedMutexTest {
         val simplifiedMutex = SimplifiedMutex(backend, retryCount = 1, retryDelay = Duration.ofMillis(1))
 
         assertThrows<RuntimeException> { simplifiedMutex.unlock("test") }
+    }
+
+    @ParameterizedTest(name = "ttl {0} ms is rejected at boundary")
+    @ValueSource(longs = [-1, 0, 1, 2])
+    fun `ttl at min boundary is rejected`(ttl: Long) {
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertThrows<IllegalArgumentException> { simplifiedMutex.lock("test", Duration.ofMillis(ttl)) }
+    }
+
+    @ParameterizedTest(name = "ttl {0} ms is accepted above boundary")
+    @ValueSource(longs = [3, 4, 100])
+    fun `ttl above min boundary is accepted`(ttl: Long) {
+        every { backend.setLock(eq("test"), any(), any()) } returns "OK"
+
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertTrue(simplifiedMutex.lock("test", Duration.ofMillis(ttl)))
     }
 }

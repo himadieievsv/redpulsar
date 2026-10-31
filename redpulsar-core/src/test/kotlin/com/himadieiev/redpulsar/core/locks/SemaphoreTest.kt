@@ -124,7 +124,7 @@ class SemaphoreTest {
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
-            semaphore.unlock("test")
+            assertTrue(semaphore.unlock("test"))
 
             verify(exactly = 1) {
                 // unlocking
@@ -139,6 +139,42 @@ class SemaphoreTest {
             verify(exactly = 0) {
                 backend.setSemaphoreLock(any(), any(), any(), any(), any())
             }
+        }
+
+        @Test
+        fun `unlock failed returns false`() {
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                )
+            } returns null
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+            } returns "OK"
+
+            val semaphore = Semaphore(listOf(backend), 3)
+
+            assertFalse(semaphore.unlock("test"))
+        }
+
+        @Test
+        fun `cleanup failure does not flip unlock result`() {
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+            } returns null
+
+            val semaphore = Semaphore(listOf(backend), 3)
+
+            assertTrue(semaphore.unlock("test"))
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -443,6 +479,129 @@ class SemaphoreTest {
                     backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
                 }
             }
+        }
+    }
+
+    @Nested
+    inner class QuorumAndTtlBoundaries {
+        @ParameterizedTest(name = "{0} backends, quorum minus one success does not acquire lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `quorum minus one success does not acquire lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            val maxLeases = 3
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(maxLeases),
+                        any(),
+                    )
+                } returns if (index < quorum - 1) "OK" else null
+                every {
+                    backend.removeSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                    )
+                } returns "OK"
+                every {
+                    backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+                } returns "OK"
+            }
+
+            val semaphore = Semaphore(backends, maxLeases, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = semaphore.lock("test", Duration.ofSeconds(10))
+
+            assertFalse(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend ->
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(maxLeases),
+                        any(),
+                    )
+                }
+            }
+            verify(exactly = 1) {
+                backends.forEach { backend ->
+                    backend.removeSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                    )
+                }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, exactly quorum success acquires lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `exactly quorum success acquires lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            val maxLeases = 3
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(maxLeases),
+                        any(),
+                    )
+                } returns if (index < quorum) "OK" else null
+            }
+
+            val semaphore = Semaphore(backends, maxLeases, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = semaphore.lock("test", Duration.ofSeconds(10))
+
+            assertTrue(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend ->
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(maxLeases),
+                        any(),
+                    )
+                }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl equal to min clock drift is rejected")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl equal to min clock drift is rejected`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+
+            val semaphore = Semaphore(backends, 3)
+            assertThrows<IllegalArgumentException> { semaphore.lock("test", Duration.ofMillis(3L * number)) }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl above min clock drift is accepted")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl above min clock drift is accepted`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            backends.forEach { backend ->
+                every {
+                    backend.setSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                        eq(3),
+                        any(),
+                    )
+                } returns "OK"
+            }
+
+            val semaphore = Semaphore(backends, 3)
+            val permit = semaphore.lock("test", Duration.ofMillis(3L * number + 100))
+
+            assertTrue(permit)
         }
     }
 }

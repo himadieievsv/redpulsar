@@ -42,9 +42,43 @@ class SimplifiedMutexIntegrationTest {
     @Test
     fun `release lock`() {
         val simplifiedMutex = SimplifiedMutex(backend)
-        simplifiedMutex.lock("test", Duration.ofSeconds(10))
-        simplifiedMutex.unlock("test")
+        assertTrue(simplifiedMutex.lock("test", Duration.ofSeconds(10)))
+        assertTrue(simplifiedMutex.unlock("test"))
 
+        assertNull(redis.get("test"))
+    }
+
+    @Test
+    fun `lock sets ttl`() {
+        val ttl = Duration.ofSeconds(2)
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertTrue(simplifiedMutex.lock("test", ttl))
+
+        val pttl = redis.pttl("test")
+        assertTrue(pttl in 1..ttl.toMillis(), "expected pttl in (0, ${ttl.toMillis()}] but was $pttl")
+    }
+
+    @Test
+    fun `unlock after expiration fails`() {
+        val simplifiedMutex = SimplifiedMutex(backend)
+
+        assertTrue(simplifiedMutex.lock("test", Duration.ofMillis(300)))
+        runBlocking { delay(400) }
+
+        assertFalse(simplifiedMutex.unlock("test"))
+    }
+
+    @Test
+    fun `non-owner cannot unlock`() {
+        val owner = SimplifiedMutex(backend)
+        val other = SimplifiedMutex(backend, retryDelay = Duration.ofMillis(10), retryCount = 1)
+
+        assertTrue(owner.lock("test", Duration.ofSeconds(10)))
+        assertFalse(other.unlock("test"))
+        assertNotNull(redis.get("test"))
+
+        assertTrue(owner.unlock("test"))
         assertNull(redis.get("test"))
     }
 

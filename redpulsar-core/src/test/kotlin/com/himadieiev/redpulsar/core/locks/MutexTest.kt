@@ -4,11 +4,13 @@ import TestTags
 import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -65,7 +67,7 @@ class MutexTest {
 
             val mutex = Mutex(listOf(backend))
             // It cant be guarantied that the lock was actually acquired
-            mutex.unlock("test")
+            assertTrue(mutex.unlock("test"))
 
             verify(exactly = 1) {
                 backend.removeLock(eq("test"), any())
@@ -73,6 +75,35 @@ class MutexTest {
             verify(exactly = 0) {
                 backend.setLock(any(), any(), any())
             }
+        }
+
+        @Test
+        fun `unlock failed returns false`() {
+            every { backend.removeLock(eq("test"), any()) } returns null
+
+            val mutex = Mutex(listOf(backend), retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                backend.removeLock(eq("test"), any())
+            }
+        }
+
+        @Test
+        fun `non-owner unlock uses different client id`() {
+            val lockClientId = slot<String>()
+            val unlockClientId = slot<String>()
+            every { backend.setLock(eq("test"), capture(lockClientId), any()) } returns "OK"
+            every { backend.removeLock(eq("test"), capture(unlockClientId)) } returns null
+
+            val owner = Mutex(listOf(backend))
+            val nonOwner = Mutex(listOf(backend), retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertTrue(owner.lock("test", Duration.ofSeconds(10)))
+            assertFalse(nonOwner.unlock("test"))
+
+            assertNotEquals(lockClientId.captured, unlockClientId.captured)
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -217,6 +248,28 @@ class MutexTest {
         }
 
         @Test
+        fun `lock acquired after retry`() {
+            every { backend1.setLock(eq("test"), any(), any()) } returnsMany listOf(null, "OK")
+            every { backend2.setLock(eq("test"), any(), any()) } returns "OK"
+            every { backend3.setLock(eq("test"), any(), any()) } returnsMany listOf(null, "OK")
+            instances.forEach { backend ->
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(instances, retryCount = 3, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test")
+
+            assertTrue(permit)
+            verify(exactly = 2) {
+                instances.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            // first attempt missed the quorum and partial locks were rolled back
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
         fun `lock declined due to clock drift`() {
             every { backend1.setLock(eq("test"), any(), any()) } returns "OK"
             every { backend2.setLock(eq("test"), any(), any()) } answers {
@@ -238,6 +291,127 @@ class MutexTest {
             verify(exactly = 3) {
                 instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
             }
+        }
+
+        @Test
+        fun `unlock requires quorum - one of three is not enough`() {
+            every { backend1.removeLock(eq("test"), any()) } returns "OK"
+            every { backend2.removeLock(eq("test"), any()) } returns null
+            every { backend3.removeLock(eq("test"), any()) } returns null
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
+        fun `unlock succeeds with two of three`() {
+            every { backend1.removeLock(eq("test"), any()) } returns "OK"
+            every { backend2.removeLock(eq("test"), any()) } returns null
+            every { backend3.removeLock(eq("test"), any()) } returns "OK"
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertTrue(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @Test
+        fun `unlock calls removeLock exactly once per backend on quorum miss`() {
+            instances.forEach { backend ->
+                every { backend.removeLock(eq("test"), any()) } returns null
+            }
+
+            val mutex = Mutex(instances, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+            assertFalse(mutex.unlock("test"))
+
+            verify(exactly = 1) {
+                instances.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+    }
+
+    @Nested
+    inner class QuorumAndTtlBoundaries {
+        @ParameterizedTest(name = "{0} backends, quorum minus one success does not acquire lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `quorum minus one success does not acquire lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns if (index < quorum - 1) "OK" else null
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(backends, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test", Duration.ofSeconds(10))
+
+            assertFalse(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.removeLock(eq("test"), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, exactly quorum success acquires lock")
+        @ValueSource(ints = [2, 4, 5, 7, 10])
+        fun `exactly quorum success acquires lock`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            val quorum = number / 2 + 1
+            backends.forEachIndexed { index, backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns if (index < quorum) "OK" else null
+            }
+
+            val mutex = Mutex(backends, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = mutex.lock("test", Duration.ofSeconds(10))
+
+            assertTrue(permit)
+            verify(exactly = 1) {
+                backends.forEach { backend -> backend.setLock(eq("test"), any(), any()) }
+            }
+            verify(exactly = 0) {
+                backends.forEach { backend -> backend.removeLock(any(), any()) }
+            }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl equal to min clock drift is rejected")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl equal to min clock drift is rejected`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+
+            val mutex = Mutex(backends)
+            assertThrows<IllegalArgumentException> { mutex.lock("test", Duration.ofMillis(3L * number)) }
+        }
+
+        @ParameterizedTest(name = "{0} backends, ttl above min clock drift is accepted")
+        @ValueSource(ints = [1, 3, 5, 7])
+        fun `ttl above min clock drift is accepted`(number: Int) {
+            val backends = (1..number).map { mockk<LocksBackend>() }
+            backends.forEach { backend ->
+                every {
+                    backend.setLock(eq("test"), any(), any())
+                } returns "OK"
+                every { backend.removeLock(eq("test"), any()) } returns "OK"
+            }
+
+            val mutex = Mutex(backends)
+            val permit = mutex.lock("test", Duration.ofMillis(3L * number + 100))
+
+            assertTrue(permit)
         }
     }
 }
