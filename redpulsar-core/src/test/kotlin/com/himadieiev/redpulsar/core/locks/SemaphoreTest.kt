@@ -225,6 +225,66 @@ class SemaphoreTest {
             assertThrows<IllegalArgumentException> { Semaphore(listOf(), 3) }
         }
 
+        @Test
+        fun `lock returns false when backend throws`() {
+            every {
+                backend.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } throws RuntimeException("boom")
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), any())
+            } returns "OK"
+
+            val semaphore = Semaphore(listOf(backend), 3, 2, Duration.ofMillis(1))
+            val permit = semaphore.lock("test", Duration.ofSeconds(1))
+
+            assertFalse(permit)
+            // executor scope is poisoned by the first failure, so retry does not re-run the callee
+            verify(exactly = 1) {
+                backend.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            }
+        }
+
+        @Test
+        fun `unlock returns false when backend throws`() {
+            every {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                )
+            } throws RuntimeException("boom")
+
+            val semaphore = Semaphore(listOf(backend), 3, 1, Duration.ofMillis(1))
+
+            assertFalse(semaphore.unlock("test"))
+            verify(exactly = 1) {
+                backend.removeSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    any(),
+                    any(),
+                )
+            }
+        }
+
         @ParameterizedTest(name = "lock acquired with ttl - {0}")
         @ValueSource(ints = [-123, -1, 0, 1, 2, 5, 10, 11, 12, 20, 40])
         fun `validate ttl`(ttl: Long) {

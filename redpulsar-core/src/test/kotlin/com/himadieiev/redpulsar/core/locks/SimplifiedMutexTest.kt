@@ -167,6 +167,24 @@ class SimplifiedMutexTest {
         }
     }
 
+    @Test
+    fun `lock propagates exception from backend`() {
+        every { backend.setLock(eq("test"), any(), any()) } throws RuntimeException("boom")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+        assertThrows<RuntimeException> { simplifiedMutex.lock("test", Duration.ofSeconds(10)) }
+    }
+
+    @Test
+    fun `unlock propagates exception from backend`() {
+        every { backend.removeLock(eq("test"), any()) } throws RuntimeException("boom")
+
+        val simplifiedMutex = SimplifiedMutex(backend, retryCount = 1, retryDelay = Duration.ofMillis(1))
+
+        assertThrows<RuntimeException> { simplifiedMutex.unlock("test") }
+    }
+
     @ParameterizedTest(name = "ttl {0} ms is rejected at boundary")
     @ValueSource(longs = [-1, 0, 1, 2])
     fun `ttl at min boundary is rejected`(ttl: Long) {

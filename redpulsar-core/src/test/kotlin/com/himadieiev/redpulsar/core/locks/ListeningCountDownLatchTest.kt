@@ -95,6 +95,62 @@ class ListeningCountDownLatchTest {
         }
 
         @Test
+        fun `count down returns failed when backend throws`() {
+            every {
+                backend.count(any(), any(), any(), any(), any(), any())
+            } throws RuntimeException("boom")
+            every { backend.undoCount(any(), any(), any()) } returns 1
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    2,
+                    listOf(backend),
+                    maxDuration = Duration.ofSeconds(10),
+                    retryCount = 3,
+                    retryDelay = Duration.ofMillis(1),
+                )
+            repeat(2) { assertEquals(CallResult.FAILED, latch.countDown()) }
+
+            // executor scope is poisoned by the first failure, so retry does not re-run the callee
+            verify(exactly = 1) { backend.count(any(), any(), any(), any(), any(), any()) }
+        }
+
+        @Test
+        fun `await propagates exception from check count`() {
+            every { backend.checkCount(any()) } throws RuntimeException("boom")
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    4,
+                    listOf(backend),
+                    maxDuration = Duration.ofSeconds(10),
+                    retryCount = 2,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertThrows<RuntimeException> { latch.await() }
+        }
+
+        @Test
+        fun `await propagates exception from listen`() {
+            backend.everyCheckCount("{countdownlatch:test}:", 2)
+            coEvery {
+                backend.listen(eq("{countdownlatch:test}:channel"))
+            } coAnswers { throw RuntimeException("boom") }
+            val latch =
+                ListeningCountDownLatch(
+                    "test",
+                    4,
+                    listOf(backend),
+                    maxDuration = Duration.ofSeconds(10),
+                    retryCount = 3,
+                    retryDelay = Duration.ofMillis(1),
+                )
+
+            assertThrows<RuntimeException> { latch.await() }
+        }
+
+        @Test
         fun `count down past zero returns success without backend calls`() {
             backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 2, 2, returnVal = "OK")
             backend.everyCount("{countdownlatch:test}:", "{countdownlatch:test}:channel", 1, 2, returnVal = "OK")
