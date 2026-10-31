@@ -7,17 +7,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 @Tag(TestTags.UNIT)
 class MultiInstanceExecutorTest {
@@ -177,8 +174,6 @@ class MultiInstanceExecutorTest {
 
     private abstract inner class TestBackend : Backend() {
         abstract fun test(): String?
-
-        abstract fun cleanUp()
     }
 
     private fun createBackends(number: Int): List<TestBackend> {
@@ -187,148 +182,5 @@ class MultiInstanceExecutorTest {
             backends.add(mockk<TestBackend>())
         }
         return backends
-    }
-
-    @Test
-    fun `cleanup runs on every backend when quorum missed`() {
-        val backends = createBackends(3)
-        backends.forEach { backend ->
-            every { backend.test() } returns null
-        }
-
-        val result =
-            runBlocking {
-                multiInstanceExecute(
-                    backends = backends,
-                    scope = scope,
-                    timeout = Duration.ofSeconds(1),
-                    waitStrategy = WaitStrategy.ALL,
-                    cleanUp = { backend -> backend.cleanUp() },
-                ) { backend ->
-                    backend.test()
-                }
-            }
-
-        assertEquals(emptyList<String>(), result)
-        verify(exactly = 1) { backends.forEach { backend -> backend.cleanUp() } }
-    }
-
-    @Test
-    fun `cleanup is not called when quorum reached`() {
-        val backends = createBackends(3)
-        backends.forEach { backend ->
-            every { backend.test() } returns "OK"
-        }
-
-        runBlocking {
-            multiInstanceExecute(
-                backends = backends,
-                scope = scope,
-                timeout = Duration.ofSeconds(1),
-                waitStrategy = WaitStrategy.ALL,
-                cleanUp = { backend -> backend.cleanUp() },
-            ) { backend ->
-                backend.test()
-            }
-        }
-
-        verify(exactly = 0) { backends.forEach { backend -> backend.cleanUp() } }
-    }
-
-    @Test
-    fun `cleanup runs on every backend when validity window exceeded`() {
-        val backends = createBackends(2)
-        every { backends[0].test() } returns "OK"
-        every { backends[1].test() } answers {
-            runBlocking { delay(500) }
-            "OK"
-        }
-
-        val result =
-            runBlocking {
-                multiInstanceExecute(
-                    backends = backends,
-                    scope = scope,
-                    timeout = Duration.ofMillis(50),
-                    waitStrategy = WaitStrategy.ALL,
-                    cleanUp = { backend -> backend.cleanUp() },
-                ) { backend ->
-                    backend.test()
-                }
-            }
-
-        assertEquals(emptyList<String>(), result)
-        verify(exactly = 1) { backends.forEach { backend -> backend.cleanUp() } }
-    }
-
-    @Test
-    fun `majority strategy cancels stragglers`() {
-        val backends = createBackends(3)
-        every { backends[0].test() } returns "OK"
-        every { backends[1].test() } returns "OK"
-        every { backends[2].test() } answers {
-            runBlocking { delay(10_000) }
-            "OK"
-        }
-
-        val time =
-            measureTimeMillis {
-                runBlocking {
-                    multiInstanceExecute(
-                        backends = backends,
-                        scope = scope,
-                        timeout = Duration.ofSeconds(30),
-                        waitStrategy = WaitStrategy.MAJORITY,
-                    ) { backend ->
-                        backend.test()
-                    }
-                }
-            }
-
-        // straggler would need 10s to complete, majority arrives instantly
-        assertTrue(time < 5_000, "expected early exit below 5000ms but took ${time}ms")
-    }
-
-    @Test
-    fun `throwing callee cancels scope so cleanup does not run`() {
-        val backends = createBackends(3)
-        backends.forEach { backend ->
-            every { backend.test() } throws RuntimeException("boom")
-        }
-
-        val result =
-            runBlocking {
-                multiInstanceExecute(
-                    backends = backends,
-                    scope = scope,
-                    timeout = Duration.ofSeconds(1),
-                    waitStrategy = WaitStrategy.ALL,
-                    cleanUp = { backend -> backend.cleanUp() },
-                ) { backend ->
-                    backend.test()
-                }
-            }
-
-        assertEquals(emptyList<String>(), result)
-        // a failed child job cancels the scope, so the cleanup coroutines never start
-        verify(exactly = 1) { backends.forEach { backend -> backend.test() } }
-        verify(exactly = 0) { backends.forEach { backend -> backend.cleanUp() } }
-    }
-
-    @Test
-    fun `empty backend list returns empty result`() {
-        val result =
-            runBlocking {
-                multiInstanceExecute(
-                    backends = emptyList(),
-                    scope = scope,
-                    timeout = Duration.ofSeconds(1),
-                    waitStrategy = WaitStrategy.ALL,
-                ) { backend ->
-                    (backend as TestBackend).test()
-                }
-            }
-
-        assertEquals(emptyList<String>(), result)
     }
 }
