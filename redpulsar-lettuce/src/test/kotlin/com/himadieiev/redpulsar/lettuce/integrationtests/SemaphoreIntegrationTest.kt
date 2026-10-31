@@ -51,7 +51,7 @@ class SemaphoreIntegrationTest {
     @Test
     fun `release lock`() {
         val semaphore = Semaphore(backends, 3)
-        semaphore.lock("test", Duration.ofSeconds(10))
+        assertTrue(semaphore.lock("test", Duration.ofSeconds(10)))
 
         val clients = instances.map { it.sync { redis -> redis.smembers("{semaphore:test}:leasers") } }
         clients.forEach { client -> assertTrue(client.isNotEmpty()) }
@@ -62,7 +62,7 @@ class SemaphoreIntegrationTest {
             }
         }
 
-        semaphore.unlock("test")
+        assertTrue(semaphore.unlock("test"))
         assertTrue(
             instances.map { it.sync { redis -> redis.smembers("{semaphore:test}:leasers") } }
                 .none { it.isNotEmpty() },
