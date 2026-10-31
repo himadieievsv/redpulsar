@@ -51,16 +51,18 @@ fun getInstances(): List<JedisCluster> {
             maxTotal = 64
             maxIdle = 8
             minIdle = 2
-            setMaxWait(Duration.ofMillis(100))
+            setMaxWait(Duration.ofSeconds(2))
             blockWhenExhausted = true
         }
 
+    // generous socket timeout, otherwise broadcast commands (FLUSHALL) miss the 50ms read budget under load
+    val timeoutMillis = 2000
     val hostPort1 = getHostPort(1)
-    val jedis1 = JedisCluster(hostPort1, 50, poolConfig)
+    val jedis1 = JedisCluster(hostPort1, timeoutMillis, poolConfig)
     val hostPort2 = getHostPort(2)
-    val jedis2 = JedisCluster(hostPort2, 50, poolConfig)
+    val jedis2 = JedisCluster(hostPort2, timeoutMillis, poolConfig)
     val hostPort3 = getHostPort(3)
-    val jedis3 = JedisCluster(hostPort3, 50, poolConfig)
+    val jedis3 = JedisCluster(hostPort3, timeoutMillis, poolConfig)
     return listOf(jedis1, jedis2, jedis3)
 }
 

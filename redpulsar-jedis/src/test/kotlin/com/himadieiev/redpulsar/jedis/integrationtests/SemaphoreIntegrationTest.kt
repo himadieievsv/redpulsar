@@ -53,7 +53,6 @@ class SemaphoreIntegrationTest {
     fun `release lock`() {
         val semaphore = Semaphore(backends, 3)
         assertTrue(semaphore.lock("test", Duration.ofSeconds(10)))
-        assertTrue(semaphore.unlock("test"))
 
         val clients = instances.map { it.smembers("{semaphore:test}:leasers") }
         clients.forEach { client -> assertTrue(client.isNotEmpty()) }
@@ -64,6 +63,7 @@ class SemaphoreIntegrationTest {
             }
         }
 
+        assertTrue(semaphore.unlock("test"))
         assertTrue(instances.map { it.smembers("{semaphore:test}:leasers") }.none { it.isNotEmpty() })
         clients[0].forEach { leaser ->
             instances.forEach {
