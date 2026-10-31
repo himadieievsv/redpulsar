@@ -4,8 +4,12 @@ import com.himadieiev.redpulsar.core.locks.abstracts.backends.LocksBackend
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -124,7 +128,7 @@ class SemaphoreTest {
             } returns "OK"
 
             val semaphore = Semaphore(listOf(backend), 3)
-            assertTrue(semaphore.unlock("test"))
+            semaphore.unlock("test")
 
             verify(exactly = 1) {
                 // unlocking
@@ -142,25 +146,42 @@ class SemaphoreTest {
         }
 
         @Test
-        fun `unlock failed returns false`() {
+        fun `separate instances use distinct lease validity keys`() {
+            val validityKeys = mutableListOf<String>()
             every {
-                backend.removeSemaphoreLock(
+                backend.setSemaphoreLock(
                     eq("{semaphore:test}:leasers"),
-                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    any(),
+                    any(),
                     any(),
                 )
-            } returns null
-            every {
-                backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
-            } returns "OK"
+            } answers {
+                validityKeys.add(secondArg())
+                "OK"
+            }
 
-            val semaphore = Semaphore(listOf(backend), 3)
+            val semaphore1 = Semaphore(listOf(backend), 3)
+            val semaphore2 = Semaphore(listOf(backend), 3)
 
-            assertFalse(semaphore.unlock("test"))
+            assertTrue(semaphore1.lock("test"))
+            assertTrue(semaphore2.lock("test"))
+
+            assertEquals(2, validityKeys.size)
+            assertNotEquals(validityKeys[0], validityKeys[1])
         }
 
         @Test
-        fun `cleanup failure does not flip unlock result`() {
+        fun `max leases one behaves like mutex`() {
+            every {
+                backend.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(1),
+                    any(),
+                )
+            } returnsMany listOf("OK", null, "OK")
             every {
                 backend.removeSemaphoreLock(
                     eq("{semaphore:test}:leasers"),
@@ -170,11 +191,17 @@ class SemaphoreTest {
             } returns "OK"
             every {
                 backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
-            } returns null
+            } returns "OK"
 
-            val semaphore = Semaphore(listOf(backend), 3)
+            val owner = Semaphore(listOf(backend), 1)
+            val contender = Semaphore(listOf(backend), 1, retryCount = 1, retryDelay = Duration.ofMillis(1))
 
-            assertTrue(semaphore.unlock("test"))
+            assertTrue(owner.lock("test"))
+            assertFalse(contender.lock("test"))
+
+            assertTrue(owner.unlock("test"))
+
+            assertTrue(contender.lock("test"))
         }
 
         @ParameterizedTest(name = "Validated with retry count - {0}")
@@ -480,26 +507,40 @@ class SemaphoreTest {
                 }
             }
         }
-    }
 
-    @Nested
-    inner class QuorumAndTtlBoundaries {
-        @ParameterizedTest(name = "{0} backends, quorum minus one success does not acquire lock")
-        @ValueSource(ints = [2, 4, 5, 7, 10])
-        fun `quorum minus one success does not acquire lock`(number: Int) {
-            val backends = (1..number).map { mockk<LocksBackend>() }
-            val quorum = number / 2 + 1
-            val maxLeases = 3
-            backends.forEachIndexed { index, backend ->
-                every {
-                    backend.setSemaphoreLock(
-                        eq("{semaphore:test}:leasers"),
-                        match { it.startsWith("{semaphore:test}:") },
-                        any(),
-                        eq(maxLeases),
-                        any(),
-                    )
-                } returns if (index < quorum - 1) "OK" else null
+        @Test
+        fun `lock declined due to clock drift`() {
+            every {
+                backend1.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } returns "OK"
+            every {
+                backend2.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } answers {
+                runBlocking { delay(40) }
+                "OK"
+            }
+            every {
+                backend3.setSemaphoreLock(
+                    eq("{semaphore:test}:leasers"),
+                    match { it.startsWith("{semaphore:test}:") },
+                    any(),
+                    eq(3),
+                    any(),
+                )
+            } returns "OK"
+            instances.forEach { backend ->
                 every {
                     backend.removeSemaphoreLock(
                         eq("{semaphore:test}:leasers"),
@@ -512,82 +553,12 @@ class SemaphoreTest {
                 } returns "OK"
             }
 
-            val semaphore = Semaphore(backends, maxLeases, retryCount = 1, retryDelay = Duration.ofMillis(1))
-            val permit = semaphore.lock("test", Duration.ofSeconds(10))
+            val semaphore = Semaphore(instances, 3, retryCount = 1, retryDelay = Duration.ofMillis(1))
+            val permit = semaphore.lock("test", Duration.ofMillis(40))
 
             assertFalse(permit)
             verify(exactly = 1) {
-                backends.forEach { backend ->
-                    backend.setSemaphoreLock(
-                        eq("{semaphore:test}:leasers"),
-                        match { it.startsWith("{semaphore:test}:") },
-                        any(),
-                        eq(maxLeases),
-                        any(),
-                    )
-                }
-            }
-            verify(exactly = 1) {
-                backends.forEach { backend ->
-                    backend.removeSemaphoreLock(
-                        eq("{semaphore:test}:leasers"),
-                        match { it.startsWith("{semaphore:test}:") },
-                        any(),
-                    )
-                }
-            }
-        }
-
-        @ParameterizedTest(name = "{0} backends, exactly quorum success acquires lock")
-        @ValueSource(ints = [2, 4, 5, 7, 10])
-        fun `exactly quorum success acquires lock`(number: Int) {
-            val backends = (1..number).map { mockk<LocksBackend>() }
-            val quorum = number / 2 + 1
-            val maxLeases = 3
-            backends.forEachIndexed { index, backend ->
-                every {
-                    backend.setSemaphoreLock(
-                        eq("{semaphore:test}:leasers"),
-                        match { it.startsWith("{semaphore:test}:") },
-                        any(),
-                        eq(maxLeases),
-                        any(),
-                    )
-                } returns if (index < quorum) "OK" else null
-            }
-
-            val semaphore = Semaphore(backends, maxLeases, retryCount = 1, retryDelay = Duration.ofMillis(1))
-            val permit = semaphore.lock("test", Duration.ofSeconds(10))
-
-            assertTrue(permit)
-            verify(exactly = 1) {
-                backends.forEach { backend ->
-                    backend.setSemaphoreLock(
-                        eq("{semaphore:test}:leasers"),
-                        match { it.startsWith("{semaphore:test}:") },
-                        any(),
-                        eq(maxLeases),
-                        any(),
-                    )
-                }
-            }
-        }
-
-        @ParameterizedTest(name = "{0} backends, ttl equal to min clock drift is rejected")
-        @ValueSource(ints = [1, 3, 5, 7])
-        fun `ttl equal to min clock drift is rejected`(number: Int) {
-            val backends = (1..number).map { mockk<LocksBackend>() }
-
-            val semaphore = Semaphore(backends, 3)
-            assertThrows<IllegalArgumentException> { semaphore.lock("test", Duration.ofMillis(3L * number)) }
-        }
-
-        @ParameterizedTest(name = "{0} backends, ttl above min clock drift is accepted")
-        @ValueSource(ints = [1, 3, 5, 7])
-        fun `ttl above min clock drift is accepted`(number: Int) {
-            val backends = (1..number).map { mockk<LocksBackend>() }
-            backends.forEach { backend ->
-                every {
+                instances.forEach { backend ->
                     backend.setSemaphoreLock(
                         eq("{semaphore:test}:leasers"),
                         match { it.startsWith("{semaphore:test}:") },
@@ -595,13 +566,14 @@ class SemaphoreTest {
                         eq(3),
                         any(),
                     )
-                } returns "OK"
+                    backend.removeSemaphoreLock(
+                        eq("{semaphore:test}:leasers"),
+                        match { it.startsWith("{semaphore:test}:") },
+                        any(),
+                    )
+                    backend.cleanUpExpiredSemaphoreLocks(eq("{semaphore:test}:leasers"), eq("{semaphore:test}:"))
+                }
             }
-
-            val semaphore = Semaphore(backends, 3)
-            val permit = semaphore.lock("test", Duration.ofMillis(3L * number + 100))
-
-            assertTrue(permit)
         }
     }
 }

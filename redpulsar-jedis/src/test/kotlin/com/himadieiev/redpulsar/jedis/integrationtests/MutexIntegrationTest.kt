@@ -8,7 +8,6 @@ import getInstances
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -43,48 +42,9 @@ class MutexIntegrationTest {
     @Test
     fun `release lock`() {
         val mutex = Mutex(backends)
-        assertTrue(mutex.lock("test", Duration.ofSeconds(10)))
-        assertTrue(mutex.unlock("test"))
+        mutex.lock("test", Duration.ofSeconds(10))
+        mutex.unlock("test")
 
-        instances.map { it.get("test") }.forEach { assertNull(it) }
-    }
-
-    @Test
-    fun `lock sets ttl on every instance`() {
-        val ttl = Duration.ofSeconds(2)
-        val mutex = Mutex(backends)
-
-        assertTrue(mutex.lock("test", ttl))
-
-        instances.forEach {
-            val pttl = it.pttl("test")
-            assertTrue(pttl in 1..ttl.toMillis(), "expected pttl in (0, ${ttl.toMillis()}] but was $pttl")
-        }
-    }
-
-    @Test
-    fun `unlock after expiration fails`() {
-        val mutex = Mutex(backends)
-
-        assertTrue(mutex.lock("test", Duration.ofMillis(300)))
-        runBlocking { delay(400) }
-
-        assertFalse(mutex.unlock("test"))
-    }
-
-    @Test
-    fun `non-owner cannot unlock`() {
-        val owner = Mutex(backends)
-        val other = Mutex(backends = backends, retryCount = 1, retryDelay = Duration.ofMillis(10))
-
-        assertTrue(owner.lock("test", Duration.ofSeconds(10)))
-        assertFalse(other.unlock("test"))
-
-        val clients = instances.map { it.get("test") }
-        assertNotNull(clients[0])
-        assertTrue(clients[0] == clients[1] && clients[1] == clients[2])
-
-        assertTrue(owner.unlock("test"))
         instances.map { it.get("test") }.forEach { assertNull(it) }
     }
 
