@@ -149,9 +149,11 @@ class SemaphoreIntegrationTest {
         runBlocking {
             delay(3000)
         }
+        // re-acquire TTL: lock() validates a quorum round against [ttl] threshold with clock drift,
+        // so the no-op-sized TTL leaves no room for expired-leaser pruning + retry round on loaded runners
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores2[it - 1].lock("test", Duration.ofMillis(20)))
+                assertTrue(semaphores2[it - 1].lock("test", Duration.ofSeconds(1)))
             }
     }
 }
