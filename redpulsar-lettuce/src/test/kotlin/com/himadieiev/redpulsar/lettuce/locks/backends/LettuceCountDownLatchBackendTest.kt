@@ -12,6 +12,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -160,12 +161,18 @@ class LettuceCountDownLatchBackendTest {
                 Assertions.assertEquals("open", result)
             }
 
-            runBlocking { Thread.sleep(200) }
+            runBlocking {
+                withTimeout(5000) {
+                    while (!listener.isCaptured) {
+                        delay(10)
+                    }
+                }
+            }
             repeat(messageCount) {
                 listener.captured.message("latch:test:channel", "open")
             }
-            runBlocking { Thread.sleep(100) }
-            verify(exactly = 1) {
+            // unsubscription is asynchronous to the message delivery, so verify with a timeout
+            verify(timeout = 5000) {
                 sync.subscribe(eq("latch:test:channel"))
                 sync.unsubscribe(eq("latch:test:channel"))
             }

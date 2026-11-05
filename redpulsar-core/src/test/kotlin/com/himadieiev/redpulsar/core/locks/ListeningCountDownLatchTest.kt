@@ -640,9 +640,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
-            coVerify(atMost = 1) {
-                instances.forEach { backend -> backend.listen(any()) }
-            }
+            instances.forEach { backend -> backend.verifyListenAtMostOnce() }
             verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
@@ -666,9 +664,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await())
 
-            coVerify(atMost = 1) {
-                instances.forEach { backend -> backend.listen(any()) }
-            }
+            instances.forEach { backend -> backend.verifyListenAtMostOnce() }
             verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
@@ -701,9 +697,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await(Duration.ofSeconds(1)))
 
-            coVerify(atMost = 1) {
-                instances.forEach { backend -> backend.listen(any()) }
-            }
+            instances.forEach { backend -> backend.verifyListenAtMostOnce() }
             verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
@@ -736,9 +730,7 @@ class ListeningCountDownLatchTest {
                 )
             assertEquals(CallResult.SUCCESS, latch.await(Duration.ofSeconds(1)))
 
-            coVerify(atMost = 1) {
-                instances.forEach { backend -> backend.listen(any()) }
-            }
+            instances.forEach { backend -> backend.verifyListenAtMostOnce() }
             verify(atMost = 1) {
                 instances.forEach { backend -> backend.checkCount(any()) }
             }
@@ -1002,6 +994,28 @@ class ListeningCountDownLatchTest {
                 eq(count),
             )
         } returns returnVal
+    }
+
+    /**
+     * Verifies that the listen step is never retried on this backend: it must have been invoked
+     * zero or one times.
+     *
+     * A backend may legitimately end up with zero calls: once a quorum of open responses is
+     * collected, the majority-strategy executor cancels the remaining jobs, possibly before their
+     * callee starts. MockK's `atMost` verification still fails when nothing matched, so this
+     * checks exactly one call first and falls back to exactly zero.
+     */
+    private fun CountDownLatchBackend.verifyListenAtMostOnce() {
+        val calledExactlyOnce =
+            try {
+                coVerify(exactly = 1) { listen(any()) }
+                true
+            } catch (ignored: AssertionError) {
+                false
+            }
+        if (!calledExactlyOnce) {
+            coVerify(exactly = 0) { listen(any()) }
+        }
     }
 
     private fun CountDownLatchBackend.everyListen(returnVal: String?) {

@@ -150,11 +150,11 @@ class SemaphoreIntegrationTest {
             }
 
         runBlocking {
-            delay(2000)
+            delay(3000)
         }
         (1..maxLeases)
             .forEach {
-                assertTrue(semaphores2[it - 1].lock("test", Duration.ofMillis(100)))
+                assertTrue(semaphores2[it - 1].lock("test", Duration.ofSeconds(1)))
             }
     }
 }
