@@ -135,7 +135,13 @@ class JedisCountDownLatchBackendTest {
                 val result = countDownLatchBackend.listen("latch:test:channel")
                 assertEquals("open", result)
             }
-            runBlocking { delay(200) }
+            runBlocking {
+                withTimeout(5000) {
+                    while (!pubSubSlot.isCaptured) {
+                        delay(10)
+                    }
+                }
+            }
             repeat(messageCount) {
                 pubSubSlot.captured.onMessage("latch:test:channel", "open")
             }
